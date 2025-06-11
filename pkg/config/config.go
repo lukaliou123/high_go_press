@@ -15,6 +15,7 @@ type Config struct {
 type ServerConfig struct {
 	Host string `mapstructure:"host"`
 	Port int    `mapstructure:"port"`
+	Mode string `mapstructure:"mode"`
 }
 
 type RedisConfig struct {
@@ -35,6 +36,7 @@ func Load(configPath string) (*Config, error) {
 	// 设置默认值
 	viper.SetDefault("server.host", "localhost")
 	viper.SetDefault("server.port", 8080)
+	viper.SetDefault("server.mode", "debug")
 	viper.SetDefault("redis.addr", "localhost:6379")
 	viper.SetDefault("redis.password", "")
 	viper.SetDefault("redis.db", 0)
@@ -54,4 +56,4 @@ func Load(configPath string) (*Config, error) {
 	}
 
 	return &config, nil
-} 
+}
