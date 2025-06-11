@@ -1,0 +1,128 @@
+File: main
+Type: cpu
+Time: Jun 11, 2025 at 5:09pm (CST)
+Duration: 15s, Total samples = 720ms ( 4.80%)
+Showing nodes accounting for 720ms, 100% of 720ms total
+      flat  flat%   sum%        cum   cum%
+     260ms 36.11% 36.11%      260ms 36.11%  runtime.futex
+      50ms  6.94% 43.06%       50ms  6.94%  internal/runtime/syscall.Syscall6
+      30ms  4.17% 47.22%       30ms  4.17%  runtime.nextFreeFast (inline)
+      20ms  2.78% 50.00%       20ms  2.78%  runtime.gopark
+      20ms  2.78% 52.78%       20ms  2.78%  runtime.nanotime (inline)
+      20ms  2.78% 55.56%       60ms  8.33%  runtime.tracebackPCs
+      20ms  2.78% 58.33%       20ms  2.78%  runtime.write1
+      10ms  1.39% 59.72%       10ms  1.39%  fmt.(*fmt).pad
+      10ms  1.39% 61.11%       30ms  4.17%  fmt.(*pp).doPrintf
+      10ms  1.39% 62.50%       20ms  2.78%  fmt.(*pp).printArg
+      10ms  1.39% 63.89%       10ms  1.39%  go.uber.org/zap.(*Logger).check
+      10ms  1.39% 65.28%       80ms 11.11%  high-go-press/internal/service.(*CounterService).IncrementCounter.func1
+      10ms  1.39% 66.67%       10ms  1.39%  internal/runtime/atomic.(*Int32).CompareAndSwap (inline)
+      10ms  1.39% 68.06%       10ms  1.39%  runtime.(*mspan).nextFreeIndex
+      10ms  1.39% 69.44%       10ms  1.39%  runtime.(*randomEnum).next (inline)
+      10ms  1.39% 70.83%       10ms  1.39%  runtime.(*semTable).rootFor (inline)
+      10ms  1.39% 72.22%       10ms  1.39%  runtime.(*unwinder).resolveInternal
+      10ms  1.39% 73.61%       10ms  1.39%  runtime.casgstatus
+      10ms  1.39% 75.00%       10ms  1.39%  runtime.execute
+      10ms  1.39% 76.39%       10ms  1.39%  runtime.findfunc
+      10ms  1.39% 77.78%       10ms  1.39%  runtime.funcInfo.entry (inline)
+      10ms  1.39% 79.17%       10ms  1.39%  runtime.isSystemGoroutine
+      10ms  1.39% 80.56%       10ms  1.39%  runtime.limiterEventStamp.typ (inline)
+      10ms  1.39% 81.94%       60ms  8.33%  runtime.mallocgc
+      10ms  1.39% 83.33%       10ms  1.39%  runtime.memclrNoHeapPointers
+      10ms  1.39% 84.72%       10ms  1.39%  runtime.mget (inline)
+      10ms  1.39% 86.11%       70ms  9.72%  runtime.netpoll
+      10ms  1.39% 87.50%       10ms  1.39%  runtime.parkunlock_c
+      10ms  1.39% 88.89%       20ms  2.78%  runtime.pcvalue
+      10ms  1.39% 90.28%       20ms  2.78%  runtime.pidleget
+      10ms  1.39% 91.67%       10ms  1.39%  runtime.read
+      10ms  1.39% 93.06%      450ms 62.50%  runtime.schedule
+      10ms  1.39% 94.44%       30ms  4.17%  runtime.stealWork
+      10ms  1.39% 95.83%       60ms  8.33%  runtime.stopm
+      10ms  1.39% 97.22%       70ms  9.72%  runtime.systemstack
+      10ms  1.39% 98.61%       10ms  1.39%  runtime.timer_create
+      10ms  1.39%   100%       10ms  1.39%  runtime.unlock2
+         0     0%   100%       10ms  1.39%  fmt.(*fmt).fmtInteger
+         0     0%   100%       10ms  1.39%  fmt.(*pp).fmtInteger
+         0     0%   100%       30ms  4.17%  fmt.Fprintf
+         0     0%   100%      130ms 18.06%  github.com/gin-gonic/gin.(*Context).Next (inline)
+         0     0%   100%      130ms 18.06%  github.com/gin-gonic/gin.(*Engine).ServeHTTP
+         0     0%   100%      130ms 18.06%  github.com/gin-gonic/gin.(*Engine).handleHTTPRequest
+         0     0%   100%      130ms 18.06%  github.com/gin-gonic/gin.CustomRecoveryWithWriter.func1
+         0     0%   100%      130ms 18.06%  github.com/gin-gonic/gin.LoggerWithConfig.func1
+         0     0%   100%       10ms  1.39%  go.uber.org/zap.(*Logger).Debug
+         0     0%   100%       70ms  9.72%  high-go-press/pkg/kafka.(*MockProducer).SendCounterEvent
+         0     0%   100%       70ms  9.72%  high-go-press/pkg/kafka.(*MockProducer).SendMessage
+         0     0%   100%       10ms  1.39%  high-go-press/pkg/pprof.AddPprofRoutes.WrapH.func3
+         0     0%   100%      120ms 16.67%  high-go-press/pkg/pprof.AddPprofRoutes.WrapH.func9
+         0     0%   100%       50ms  6.94%  internal/runtime/syscall.EpollWait
+         0     0%   100%      130ms 18.06%  net/http.(*ServeMux).ServeHTTP
+         0     0%   100%      130ms 18.06%  net/http.(*conn).serve
+         0     0%   100%      130ms 18.06%  net/http.HandlerFunc.ServeHTTP
+         0     0%   100%      130ms 18.06%  net/http.serverHandler.ServeHTTP
+         0     0%   100%      120ms 16.67%  net/http/pprof.Index
+         0     0%   100%       10ms  1.39%  net/http/pprof.Profile
+         0     0%   100%      120ms 16.67%  net/http/pprof.handler.ServeHTTP
+         0     0%   100%       20ms  2.78%  runtime.(*inlineUnwinder).next
+         0     0%   100%       20ms  2.78%  runtime.(*inlineUnwinder).resolveInternal (inline)
+         0     0%   100%       10ms  1.39%  runtime.(*limiterEvent).stop
+         0     0%   100%       10ms  1.39%  runtime.(*mcache).nextFree
+         0     0%   100%       20ms  2.78%  runtime.(*timer).maybeAdd
+         0     0%   100%       20ms  2.78%  runtime.(*timer).modify
+         0     0%   100%       20ms  2.78%  runtime.(*timer).reset (inline)
+         0     0%   100%       30ms  4.17%  runtime.(*timers).check
+         0     0%   100%       10ms  1.39%  runtime.(*timers).unlock (inline)
+         0     0%   100%       20ms  2.78%  runtime.(*unwinder).next
+         0     0%   100%       10ms  1.39%  runtime.SetCPUProfileRate
+         0     0%   100%       30ms  4.17%  runtime.convT64
+         0     0%   100%       60ms  8.33%  runtime.doRecordGoroutineProfile
+         0     0%   100%       60ms  8.33%  runtime.doRecordGoroutineProfile.func1
+         0     0%   100%      190ms 26.39%  runtime.findRunnable
+         0     0%   100%       60ms  8.33%  runtime.forEachGRace
+         0     0%   100%       50ms  6.94%  runtime.futexsleep
+         0     0%   100%      210ms 29.17%  runtime.futexwakeup
+         0     0%   100%       10ms  1.39%  runtime.gdestroy
+         0     0%   100%       20ms  2.78%  runtime.goexit0
+         0     0%   100%       10ms  1.39%  runtime.goparkunlock (inline)
+         0     0%   100%       60ms  8.33%  runtime.goroutineProfileWithLabels
+         0     0%   100%       60ms  8.33%  runtime.goroutineProfileWithLabelsConcurrent
+         0     0%   100%       60ms  8.33%  runtime.goroutineProfileWithLabelsConcurrent.func2
+         0     0%   100%       10ms  1.39%  runtime.goyield_m
+         0     0%   100%       50ms  6.94%  runtime.mPark (inline)
+         0     0%   100%      500ms 69.44%  runtime.mcall
+         0     0%   100%       20ms  2.78%  runtime.netpollBreak
+         0     0%   100%       30ms  4.17%  runtime.newobject
+         0     0%   100%       50ms  6.94%  runtime.notesleep
+         0     0%   100%      210ms 29.17%  runtime.notewakeup
+         0     0%   100%      470ms 65.28%  runtime.park_m
+         0     0%   100%       20ms  2.78%  runtime.pcdatavalue1
+         0     0%   100%       10ms  1.39%  runtime.pidlegetSpinning
+         0     0%   100%       60ms  8.33%  runtime.pprof_goroutineProfileWithLabels
+         0     0%   100%       20ms  2.78%  runtime.resetForSleep
+         0     0%   100%      240ms 33.33%  runtime.resetspinning
+         0     0%   100%       60ms  8.33%  runtime.saveg
+         0     0%   100%       10ms  1.39%  runtime.semacquire1
+         0     0%   100%       10ms  1.39%  runtime.semrelease1
+         0     0%   100%       10ms  1.39%  runtime.setThreadCPUProfiler
+         0     0%   100%       10ms  1.39%  runtime.setcpuprofilerate
+         0     0%   100%      220ms 30.56%  runtime.startm
+         0     0%   100%       60ms  8.33%  runtime.tryRecordGoroutineProfile
+         0     0%   100%       10ms  1.39%  runtime.unlock (inline)
+         0     0%   100%       10ms  1.39%  runtime.unlockWithRank (inline)
+         0     0%   100%       20ms  2.78%  runtime.wakeNetPoller
+         0     0%   100%      240ms 33.33%  runtime.wakep
+         0     0%   100%       20ms  2.78%  runtime.write
+         0     0%   100%      120ms 16.67%  runtime/pprof.(*Profile).WriteTo
+         0     0%   100%       10ms  1.39%  runtime/pprof.StartCPUProfile
+         0     0%   100%       60ms  8.33%  runtime/pprof.printCountProfile
+         0     0%   100%       60ms  8.33%  runtime/pprof.printCountProfile.func1
+         0     0%   100%      120ms 16.67%  runtime/pprof.writeGoroutine
+         0     0%   100%      120ms 16.67%  runtime/pprof.writeRuntimeProfile
+         0     0%   100%       10ms  1.39%  sync.(*Mutex).Lock (inline)
+         0     0%   100%       10ms  1.39%  sync.(*Mutex).Unlock (inline)
+         0     0%   100%       10ms  1.39%  sync.(*Mutex).lockSlow
+         0     0%   100%       10ms  1.39%  sync.(*Mutex).unlockSlow
+         0     0%   100%       10ms  1.39%  sync.(*RWMutex).Lock
+         0     0%   100%       10ms  1.39%  sync.(*RWMutex).Unlock
+         0     0%   100%       10ms  1.39%  sync.runtime_SemacquireMutex
+         0     0%   100%       10ms  1.39%  sync.runtime_Semrelease
+         0     0%   100%       40ms  5.56%  time.Sleep

@@ -1,0 +1,55 @@
+File: main
+Type: inuse_space
+Time: Jun 11, 2025 at 5:09pm (CST)
+Showing nodes accounting for 235.58MB, 97.21% of 242.34MB total
+Dropped 46 nodes (cum <= 1.21MB)
+      flat  flat%   sum%        cum   cum%
+   86.16MB 35.55% 35.55%   157.54MB 65.01%  high-go-press/pkg/kafka.(*MockProducer).SendCounterEvent
+   47.51MB 19.60% 55.16%    47.51MB 19.60%  encoding/json.Marshal
+   39.02MB 16.10% 71.26%    39.02MB 16.10%  runtime.malg
+      18MB  7.43% 78.68%    18.50MB  7.63%  fmt.Sprintf
+   16.88MB  6.96% 85.65%    20.88MB  8.61%  high-go-press/pkg/kafka.(*MockProducer).SendMessage
+       9MB  3.71% 89.36%   181.04MB 74.71%  high-go-press/internal/service.(*CounterService).IncrementCounter.func1
+    6.50MB  2.68% 92.04%     6.50MB  2.68%  encoding/json.(*decodeState).literalStore
+    4.50MB  1.86% 93.90%     4.50MB  1.86%  sync.runtime_SemacquireMutex
+    4.02MB  1.66% 95.56%     4.02MB  1.66%  bufio.NewReaderSize (inline)
+    2.51MB  1.04% 96.59%     2.51MB  1.04%  bufio.NewWriterSize (inline)
+    1.50MB  0.62% 97.21%     1.50MB  0.62%  internal/poll.runtime_Semacquire
+         0     0% 97.21%     4.02MB  1.66%  bufio.NewReader (inline)
+         0     0% 97.21%     6.50MB  2.68%  encoding/json.(*Decoder).Decode
+         0     0% 97.21%     6.50MB  2.68%  encoding/json.(*decodeState).object
+         0     0% 97.21%     6.50MB  2.68%  encoding/json.(*decodeState).unmarshal
+         0     0% 97.21%     6.50MB  2.68%  encoding/json.(*decodeState).value
+         0     0% 97.21%     1.50MB  0.62%  fmt.Fprint
+         0     0% 97.21%       10MB  4.13%  github.com/gin-gonic/gin.(*Context).Next (inline)
+         0     0% 97.21%     6.50MB  2.68%  github.com/gin-gonic/gin.(*Context).ShouldBindJSON (inline)
+         0     0% 97.21%     6.50MB  2.68%  github.com/gin-gonic/gin.(*Context).ShouldBindWith (inline)
+         0     0% 97.21%       11MB  4.54%  github.com/gin-gonic/gin.(*Engine).ServeHTTP
+         0     0% 97.21%       10MB  4.13%  github.com/gin-gonic/gin.(*Engine).handleHTTPRequest
+         0     0% 97.21%        8MB  3.30%  github.com/gin-gonic/gin.CustomRecoveryWithWriter.func1
+         0     0% 97.21%       10MB  4.13%  github.com/gin-gonic/gin.LoggerWithConfig.func1
+         0     0% 97.21%     6.50MB  2.68%  github.com/gin-gonic/gin/binding.decodeJSON
+         0     0% 97.21%     6.50MB  2.68%  github.com/gin-gonic/gin/binding.jsonBinding.Bind
+         0     0% 97.21%     1.51MB  0.62%  github.com/go-playground/validator/v10.init
+         0     0% 97.21%        8MB  3.30%  high-go-press/cmd/gateway/handlers.(*CounterHandler).IncrementCounter
+         0     0% 97.21%     1.50MB  0.62%  internal/poll.(*FD).Write
+         0     0% 97.21%     1.50MB  0.62%  internal/poll.(*FD).writeLock (inline)
+         0     0% 97.21%     1.50MB  0.62%  internal/poll.(*fdMutex).rwlock
+         0     0% 97.21%    18.03MB  7.44%  net/http.(*conn).serve
+         0     0% 97.21%     4.02MB  1.66%  net/http.newBufioReader
+         0     0% 97.21%     2.51MB  1.04%  net/http.newBufioWriterSize
+         0     0% 97.21%       11MB  4.54%  net/http.serverHandler.ServeHTTP
+         0     0% 97.21%     1.50MB  0.62%  os.(*File).Write
+         0     0% 97.21%     1.50MB  0.62%  os.(*File).write (inline)
+         0     0% 97.21%     1.51MB  0.62%  regexp.Compile (inline)
+         0     0% 97.21%     1.51MB  0.62%  regexp.MustCompile
+         0     0% 97.21%     1.51MB  0.62%  regexp.compile
+         0     0% 97.21%     2.06MB  0.85%  runtime.doInit (inline)
+         0     0% 97.21%     2.06MB  0.85%  runtime.doInit1
+         0     0% 97.21%     2.81MB  1.16%  runtime.main
+         0     0% 97.21%    39.96MB 16.49%  runtime.newproc.func1
+         0     0% 97.21%    39.96MB 16.49%  runtime.newproc1
+         0     0% 97.21%    39.96MB 16.49%  runtime.systemstack
+         0     0% 97.21%     4.50MB  1.86%  sync.(*Mutex).Lock (inline)
+         0     0% 97.21%     4.50MB  1.86%  sync.(*Mutex).lockSlow
+         0     0% 97.21%     4.50MB  1.86%  sync.(*RWMutex).Lock
