@@ -42,6 +42,16 @@ func NewRedisRepo(client *redis.Client) biz.CounterRepo {
 	}
 }
 
+// SetClient 设置Redis客户端（用于微服务模式）
+func (r *RedisRepo) SetClient(client *redis.Client) {
+	r.client = client
+}
+
+// SetLogger 设置Logger
+func (r *RedisRepo) SetLogger(logger *zap.Logger) {
+	r.logger = logger
+}
+
 // Close 关闭Redis连接
 func (r *RedisRepo) Close() error {
 	return r.client.Close()

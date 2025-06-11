@@ -5,6 +5,7 @@ import (
 	"net/http"
 	"time"
 
+	pb "high-go-press/api/proto/counter"
 	"high-go-press/internal/biz"
 	"high-go-press/internal/gateway/client"
 	"high-go-press/pkg/pool"
@@ -46,28 +47,34 @@ func (h *CounterHandler) IncrementCounter(c *gin.Context) {
 		req.Delta = 1
 	}
 
-	// 创建gRPC请求上下文（为后续gRPC调用准备）
+	// 创建gRPC请求上下文
 	ctx, cancel := context.WithTimeout(context.Background(), h.timeout)
 	defer cancel()
-	_ = ctx // 暂时忽略，等待protobuf完成后使用
 
-	// HTTP请求转换为gRPC请求（暂时用简化的结构）
-	grpcReq := &struct {
-		ResourceId  string
-		CounterType string
-		Delta       int64
-	}{
+	// HTTP请求转换为gRPC请求
+	grpcReq := &pb.IncrementRequest{
 		ResourceId:  req.ResourceID,
 		CounterType: req.CounterType,
 		Delta:       req.Delta,
 	}
 
-	// 暂时创建模拟的响应，等待protobuf编译完成后替换
+	// 调用Counter gRPC服务
+	grpcResp, err := h.counterClient.IncrementCounter(ctx, grpcReq)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"status":  "error",
+			"error":   "Failed to increment counter",
+			"details": err.Error(),
+		})
+		return
+	}
+
+	// 转换gRPC响应为HTTP响应
 	resp := &biz.CounterResponse{
 		ResourceID:   grpcReq.ResourceId,
 		CounterType:  grpcReq.CounterType,
-		CurrentValue: grpcReq.Delta, // 简化处理
-		Success:      true,
+		CurrentValue: grpcResp.CurrentValue,
+		Success:      grpcResp.Status.Success,
 		Timestamp:    time.Now().Unix(),
 	}
 
@@ -92,13 +99,29 @@ func (h *CounterHandler) GetCounter(c *gin.Context) {
 	// 创建gRPC请求上下文
 	ctx, cancel := context.WithTimeout(context.Background(), h.timeout)
 	defer cancel()
-	_ = ctx // 暂时忽略，等待protobuf完成后使用
 
-	// 暂时创建模拟响应
+	// 创建gRPC请求
+	grpcReq := &pb.GetCounterRequest{
+		ResourceId:  resourceID,
+		CounterType: counterType,
+	}
+
+	// 调用Counter gRPC服务
+	grpcResp, err := h.counterClient.GetCounter(ctx, grpcReq)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"status":  "error",
+			"error":   "Failed to get counter",
+			"details": err.Error(),
+		})
+		return
+	}
+
+	// 转换gRPC响应为HTTP响应
 	counter := &biz.Counter{
 		ResourceID:   resourceID,
 		CounterType:  counterType,
-		CurrentValue: 0, // 默认值
+		CurrentValue: grpcResp.Value,
 		UpdatedAt:    time.Now().Unix(),
 	}
 
@@ -122,15 +145,38 @@ func (h *CounterHandler) BatchGetCounters(c *gin.Context) {
 	// 创建gRPC请求上下文
 	ctx, cancel := context.WithTimeout(context.Background(), h.timeout)
 	defer cancel()
-	_ = ctx // 暂时忽略，等待protobuf完成后使用
 
-	// 构建响应数据
-	results := make([]biz.Counter, len(req.Items))
+	// 转换HTTP请求为gRPC请求
+	grpcRequests := make([]*pb.GetCounterRequest, len(req.Items))
 	for i, item := range req.Items {
+		grpcRequests[i] = &pb.GetCounterRequest{
+			ResourceId:  item.ResourceID,
+			CounterType: item.CounterType,
+		}
+	}
+
+	grpcReq := &pb.BatchGetRequest{
+		Requests: grpcRequests,
+	}
+
+	// 调用Counter gRPC服务
+	grpcResp, err := h.counterClient.BatchGetCounters(ctx, grpcReq)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"status":  "error",
+			"error":   "Failed to batch get counters",
+			"details": err.Error(),
+		})
+		return
+	}
+
+	// 转换gRPC响应为HTTP响应
+	results := make([]biz.Counter, len(grpcResp.Counters))
+	for i, result := range grpcResp.Counters {
 		results[i] = biz.Counter{
-			ResourceID:   item.ResourceID,
-			CounterType:  item.CounterType,
-			CurrentValue: 0, // 默认值
+			ResourceID:   result.ResourceId,
+			CounterType:  result.CounterType,
+			CurrentValue: result.Value,
 			UpdatedAt:    time.Now().Unix(),
 		}
 	}
