@@ -1,0 +1,97 @@
+syntax = "proto3";
+package analytics;
+option go_package = "high-go-press/api/proto/analytics";
+
+import "api/proto/common/types.proto";
+
+// Analytics服务定义
+service AnalyticsService {
+  // 获取热门计数器排行榜
+  rpc GetTopCounters(TopCountersRequest) returns (TopCountersResponse);
+  
+  // 获取计数器统计信息
+  rpc GetCounterStats(StatsRequest) returns (StatsResponse);
+  
+  // 获取系统监控数据
+  rpc GetSystemMetrics(SystemMetricsRequest) returns (SystemMetricsResponse);
+  
+  // 健康检查
+  rpc HealthCheck(HealthCheckRequest) returns (HealthCheckResponse);
+}
+
+// 热门计数器请求
+message TopCountersRequest {
+  string counter_type = 1;
+  int32 limit = 2;
+  string time_range = 3; // 时间范围: "1h", "24h", "7d", "30d"
+  common.PaginationRequest pagination = 4;
+}
+
+// 计数器条目
+message CounterItem {
+  string resource_id = 1;
+  string counter_type = 2;
+  int64 value = 3;
+  int64 increment_count = 4;
+  common.Timestamp last_updated = 5;
+}
+
+// 热门计数器响应
+message TopCountersResponse {
+  common.Status status = 1;
+  repeated CounterItem counters = 2;
+  common.PaginationResponse pagination = 3;
+}
+
+// 统计请求
+message StatsRequest {
+  string resource_id = 1;
+  string counter_type = 2;
+  string time_range = 3;
+  repeated string metrics = 4; // 要查询的指标: "total", "avg", "peak", "trend"
+}
+
+// 统计响应
+message StatsResponse {
+  common.Status status = 1;
+  string resource_id = 2;
+  string counter_type = 3;
+  map<string, double> metrics = 4; // 指标名 -> 值
+  repeated TimeSeriesPoint time_series = 5;
+}
+
+// 时间序列数据点
+message TimeSeriesPoint {
+  common.Timestamp timestamp = 1;
+  double value = 2;
+}
+
+// 系统监控请求
+message SystemMetricsRequest {
+  repeated string components = 1; // "worker_pool", "object_pool", "kafka", "redis"
+}
+
+// 系统监控响应
+message SystemMetricsResponse {
+  common.Status status = 1;
+  map<string, ComponentMetrics> metrics = 2;
+}
+
+// 组件指标
+message ComponentMetrics {
+  string component = 1;
+  map<string, double> values = 2;
+  common.Timestamp collected_at = 3;
+}
+
+// 健康检查请求
+message HealthCheckRequest {
+  string service = 1;
+}
+
+// 健康检查响应
+message HealthCheckResponse {
+  common.Status status = 1;
+  string service = 2;
+  map<string, string> details = 3;
+} 

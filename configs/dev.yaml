@@ -1,0 +1,39 @@
+# HighGoPress 开发环境配置
+# Phase 2 Day 1
+
+# 继承基础配置，覆盖开发环境特定设置
+
+# Gateway 开发配置
+gateway:
+  server:
+    mode: "debug"
+  cors:
+    origins: ["http://localhost:3000", "http://localhost:8080"]
+
+# 日志开发配置
+logging:
+  level: "debug"
+  format: "console"
+  output: "stdout"
+
+# 监控开发配置
+monitoring:
+  pprof:
+    enabled: true
+    port: 6060
+  prometheus:
+    enabled: false # 开发环境关闭prometheus
+  health_check:
+    port: 8090
+
+# Redis 开发配置
+redis:
+  address: "localhost:6379"
+  password: ""
+  db: 1 # 使用不同的数据库避免与生产冲突
+
+# 服务发现开发配置
+discovery:
+  type: "consul"
+  consul:
+    address: "localhost:8500" 

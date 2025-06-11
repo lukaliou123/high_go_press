@@ -1,0 +1,74 @@
+syntax = "proto3";
+package counter;
+option go_package = "high-go-press/api/proto/counter";
+
+import "api/proto/common/types.proto";
+
+// Counter服务定义
+service CounterService {
+  // 计数器增量操作
+  rpc IncrementCounter(IncrementRequest) returns (IncrementResponse);
+  
+  // 获取单个计数器值
+  rpc GetCounter(GetCounterRequest) returns (GetCounterResponse);
+  
+  // 批量获取计数器
+  rpc BatchGetCounters(BatchGetRequest) returns (BatchGetResponse);
+  
+  // 健康检查
+  rpc HealthCheck(HealthCheckRequest) returns (HealthCheckResponse);
+}
+
+// 增量请求
+message IncrementRequest {
+  string resource_id = 1;
+  string counter_type = 2;
+  int64 delta = 3;
+  map<string, string> metadata = 4;
+}
+
+// 增量响应
+message IncrementResponse {
+  common.Status status = 1;
+  int64 current_value = 2;
+  string resource_id = 3;
+  string counter_type = 4;
+}
+
+// 获取计数器请求
+message GetCounterRequest {
+  string resource_id = 1;
+  string counter_type = 2;
+}
+
+// 获取计数器响应
+message GetCounterResponse {
+  common.Status status = 1;
+  int64 value = 2;
+  string resource_id = 3;
+  string counter_type = 4;
+  common.Timestamp last_updated = 5;
+}
+
+// 批量获取请求
+message BatchGetRequest {
+  repeated GetCounterRequest requests = 1;
+}
+
+// 批量获取响应
+message BatchGetResponse {
+  common.Status status = 1;
+  repeated GetCounterResponse counters = 2;
+}
+
+// 健康检查请求
+message HealthCheckRequest {
+  string service = 1;
+}
+
+// 健康检查响应
+message HealthCheckResponse {
+  common.Status status = 1;
+  string service = 2;
+  map<string, string> details = 3;
+} 
