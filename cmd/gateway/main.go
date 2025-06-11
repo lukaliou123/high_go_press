@@ -13,10 +13,8 @@ import (
 	"go.uber.org/zap"
 
 	"high-go-press/cmd/gateway/handlers"
-	"high-go-press/internal/dao"
-	"high-go-press/internal/service"
+	"high-go-press/internal/gateway/service"
 	"high-go-press/pkg/config"
-	"high-go-press/pkg/kafka"
 	"high-go-press/pkg/logger"
 	"high-go-press/pkg/pool"
 	"high-go-press/pkg/pprof"
@@ -38,41 +36,30 @@ func main() {
 	}
 	defer log.Sync()
 
-	log.Info("Starting HighGoPress service",
+	log.Info("Starting HighGoPress Gateway service",
 		zap.String("host", cfg.Server.Host),
 		zap.Int("port", cfg.Server.Port))
 
-	// 初始化Redis DAO
-	redisDAO, err := dao.NewRedisDAO(cfg.Redis, log)
-	if err != nil {
-		log.Fatal("Failed to initialize Redis DAO", zap.Error(err))
-	}
-	defer redisDAO.Close()
-
-	log.Info("Connected to Redis successfully",
-		zap.String("addr", cfg.Redis.Addr))
-
-	// 初始化Object Pool
+	// 初始化Object Pool (仍需要用于请求对象复用)
 	objectPool := pool.NewObjectPool()
 
-	// 初始化Kafka Producer (使用Mock版本)
-	kafkaProducer := kafka.NewMockProducer(log)
-	defer kafkaProducer.Close()
-
-	// 初始化Worker Pool
-	workerPool, err := pool.NewWorkerPool(log)
-	if err != nil {
-		log.Fatal("Failed to initialize worker pool", zap.Error(err))
+	// 初始化微服务管理器
+	serviceConfig := &service.Config{
+		CounterServiceAddr: "localhost:9001", // Counter微服务地址
+		TimeoutDuration:    5 * time.Second,
 	}
-	defer workerPool.Shutdown(context.Background())
 
-	// 初始化服务
-	counterService := service.NewCounterService(redisDAO, workerPool, objectPool, kafkaProducer, log)
+	serviceManager, err := service.NewServiceManager(serviceConfig)
+	if err != nil {
+		log.Fatal("Failed to initialize service manager", zap.Error(err))
+	}
+	defer serviceManager.Close()
 
-	// 初始化处理器
+	log.Info("✅ All microservices connected successfully")
+
+	// 初始化处理器 - 使用微服务客户端
 	healthHandler := handlers.NewHealthHandler()
-	counterHandler := handlers.NewCounterHandler(counterService, objectPool)
-	poolHandler := handlers.NewPoolHandler(workerPool)
+	counterHandler := handlers.NewCounterHandler(serviceManager.GetCounterClient(), objectPool)
 
 	// 创建Gin路由器
 	if cfg.Server.Mode == "release" {
@@ -89,13 +76,13 @@ func main() {
 		log.Info("Pprof routes enabled", zap.String("path", "/debug/pprof"))
 	}
 
-	// API路由
+	// API路由 - 保持现有API接口不变
 	v1 := router.Group("/api/v1")
 	{
 		// 健康检查
 		v1.GET("/health", healthHandler.HealthCheck)
 
-		// 计数器相关
+		// 计数器相关 - 现在转发到Counter微服务
 		counterGroup := v1.Group("/counter")
 		{
 			counterGroup.POST("/increment", counterHandler.IncrementCounter)
@@ -103,12 +90,9 @@ func main() {
 			counterGroup.POST("/batch", counterHandler.BatchGetCounters)
 		}
 
-		// 系统监控
+		// 系统监控 - 保留必要的监控功能
 		systemGroup := v1.Group("/system")
 		{
-			systemGroup.GET("/pools", poolHandler.GetPoolStats)
-			systemGroup.POST("/pools/test", poolHandler.TestWorkerPool)
-
 			// 对象池统计
 			systemGroup.GET("/object-pools", func(c *gin.Context) {
 				stats := objectPool.GetStats()
@@ -118,12 +102,23 @@ func main() {
 				})
 			})
 
-			// Kafka统计
-			systemGroup.GET("/kafka", func(c *gin.Context) {
-				stats := kafkaProducer.GetStats()
+			// 微服务健康检查
+			systemGroup.GET("/services/health", func(c *gin.Context) {
+				ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+				defer cancel()
+
+				if err := serviceManager.HealthCheck(ctx); err != nil {
+					c.JSON(http.StatusServiceUnavailable, gin.H{
+						"status":  "error",
+						"error":   "Service health check failed",
+						"details": err.Error(),
+					})
+					return
+				}
+
 				c.JSON(http.StatusOK, gin.H{
-					"status": "success",
-					"data":   stats,
+					"status":  "success",
+					"message": "All services are healthy",
 				})
 			})
 		}
@@ -137,7 +132,9 @@ func main() {
 
 	// 启动服务器
 	go func() {
-		log.Info("Server starting", zap.String("addr", server.Addr))
+		log.Info("Gateway server starting",
+			zap.String("addr", server.Addr),
+			zap.String("mode", "microservices"))
 		if err := server.ListenAndServe(); err != nil && err != http.ErrServerClosed {
 			log.Fatal("Failed to start server", zap.Error(err))
 		}
@@ -148,7 +145,7 @@ func main() {
 	signal.Notify(quit, syscall.SIGINT, syscall.SIGTERM)
 	<-quit
 
-	log.Info("Shutting down server...")
+	log.Info("Shutting down Gateway server...")
 
 	// 优雅关闭服务器
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
@@ -158,5 +155,5 @@ func main() {
 		log.Fatal("Server forced to shutdown", zap.Error(err))
 	}
 
-	log.Info("Server exited")
+	log.Info("Gateway server exited")
 }

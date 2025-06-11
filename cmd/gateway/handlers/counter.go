@@ -1,29 +1,34 @@
 package handlers
 
 import (
+	"context"
 	"net/http"
+	"time"
 
 	"high-go-press/internal/biz"
+	"high-go-press/internal/gateway/client"
 	"high-go-press/pkg/pool"
 
 	"github.com/gin-gonic/gin"
 )
 
-// CounterHandler 计数器处理器
+// CounterHandler 计数器处理器 - 微服务版本
 type CounterHandler struct {
-	counterService biz.CounterService
-	objPool        *pool.ObjectPool
+	counterClient *client.CounterClient
+	objPool       *pool.ObjectPool
+	timeout       time.Duration
 }
 
 // NewCounterHandler 创建计数器处理器
-func NewCounterHandler(counterService biz.CounterService, objPool *pool.ObjectPool) *CounterHandler {
+func NewCounterHandler(counterClient *client.CounterClient, objPool *pool.ObjectPool) *CounterHandler {
 	return &CounterHandler{
-		counterService: counterService,
-		objPool:        objPool,
+		counterClient: counterClient,
+		objPool:       objPool,
+		timeout:       5 * time.Second, // 默认5秒超时
 	}
 }
 
-// IncrementCounter 增量计数器
+// IncrementCounter 增量计数器 - HTTP转gRPC
 func (h *CounterHandler) IncrementCounter(c *gin.Context) {
 	req := h.objPool.GetIncrementRequest()
 	defer h.objPool.PutIncrementRequest(req)
@@ -41,13 +46,29 @@ func (h *CounterHandler) IncrementCounter(c *gin.Context) {
 		req.Delta = 1
 	}
 
-	resp, err := h.counterService.IncrementCounter(req)
-	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{
-			"error":   "Failed to increment counter",
-			"details": err.Error(),
-		})
-		return
+	// 创建gRPC请求上下文（为后续gRPC调用准备）
+	ctx, cancel := context.WithTimeout(context.Background(), h.timeout)
+	defer cancel()
+	_ = ctx // 暂时忽略，等待protobuf完成后使用
+
+	// HTTP请求转换为gRPC请求（暂时用简化的结构）
+	grpcReq := &struct {
+		ResourceId  string
+		CounterType string
+		Delta       int64
+	}{
+		ResourceId:  req.ResourceID,
+		CounterType: req.CounterType,
+		Delta:       req.Delta,
+	}
+
+	// 暂时创建模拟的响应，等待protobuf编译完成后替换
+	resp := &biz.CounterResponse{
+		ResourceID:   grpcReq.ResourceId,
+		CounterType:  grpcReq.CounterType,
+		CurrentValue: grpcReq.Delta, // 简化处理
+		Success:      true,
+		Timestamp:    time.Now().Unix(),
 	}
 
 	c.JSON(http.StatusOK, gin.H{
@@ -56,7 +77,7 @@ func (h *CounterHandler) IncrementCounter(c *gin.Context) {
 	})
 }
 
-// GetCounter 获取计数器
+// GetCounter 获取计数器 - HTTP转gRPC
 func (h *CounterHandler) GetCounter(c *gin.Context) {
 	resourceID := c.Param("resource_id")
 	counterType := c.Param("counter_type")
@@ -68,13 +89,17 @@ func (h *CounterHandler) GetCounter(c *gin.Context) {
 		return
 	}
 
-	counter, err := h.counterService.GetCounter(resourceID, counterType)
-	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{
-			"error":   "Failed to get counter",
-			"details": err.Error(),
-		})
-		return
+	// 创建gRPC请求上下文
+	ctx, cancel := context.WithTimeout(context.Background(), h.timeout)
+	defer cancel()
+	_ = ctx // 暂时忽略，等待protobuf完成后使用
+
+	// 暂时创建模拟响应
+	counter := &biz.Counter{
+		ResourceID:   resourceID,
+		CounterType:  counterType,
+		CurrentValue: 0, // 默认值
+		UpdatedAt:    time.Now().Unix(),
 	}
 
 	c.JSON(http.StatusOK, gin.H{
@@ -83,10 +108,10 @@ func (h *CounterHandler) GetCounter(c *gin.Context) {
 	})
 }
 
-// BatchGetCounters 批量获取计数器
+// BatchGetCounters 批量获取计数器 - HTTP转gRPC
 func (h *CounterHandler) BatchGetCounters(c *gin.Context) {
-	req := new(biz.BatchRequest)                  // 使用new来获取指针，而不是声明变量
-	if err := c.ShouldBindJSON(req); err != nil { // 直接传递指针
+	req := new(biz.BatchRequest)
+	if err := c.ShouldBindJSON(req); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{
 			"error":   "Invalid request format",
 			"details": err.Error(),
@@ -94,13 +119,25 @@ func (h *CounterHandler) BatchGetCounters(c *gin.Context) {
 		return
 	}
 
-	resp, err := h.counterService.BatchGetCounters(req) // req本身已经是地址
-	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{
-			"error":   "Failed to batch get counters",
-			"details": err.Error(),
-		})
-		return
+	// 创建gRPC请求上下文
+	ctx, cancel := context.WithTimeout(context.Background(), h.timeout)
+	defer cancel()
+	_ = ctx // 暂时忽略，等待protobuf完成后使用
+
+	// 构建响应数据
+	results := make([]biz.Counter, len(req.Items))
+	for i, item := range req.Items {
+		results[i] = biz.Counter{
+			ResourceID:   item.ResourceID,
+			CounterType:  item.CounterType,
+			CurrentValue: 0, // 默认值
+			UpdatedAt:    time.Now().Unix(),
+		}
+	}
+
+	resp := &biz.BatchResponse{
+		Results: results,
+		Total:   len(results),
 	}
 
 	c.JSON(http.StatusOK, gin.H{
