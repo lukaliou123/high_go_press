@@ -7,26 +7,63 @@ import (
 	"time"
 
 	"high-go-press/internal/gateway/client"
+
+	"go.uber.org/zap"
 )
 
 // ServiceManager 微服务管理器
 type ServiceManager struct {
-	counterClient *client.CounterClient
-	config        *Config
+	counterClientPool *client.CounterClientPool
+	config            *Config
+	logger            *zap.Logger
 }
 
 // Config 服务配置
 type Config struct {
 	CounterServiceAddr string
 	TimeoutDuration    time.Duration
+	// 连接池配置
+	PoolSize         int
+	MaxRecvMsgSize   int
+	MaxSendMsgSize   int
+	KeepAliveTime    time.Duration
+	KeepAliveTimeout time.Duration
 }
 
-// NewServiceManager 创建服务管理器
-func NewServiceManager(config *Config) (*ServiceManager, error) {
-	// 创建Counter服务客户端
-	counterClient, err := client.NewCounterClient(config.CounterServiceAddr)
+// DefaultConfig 默认配置
+func DefaultConfig() *Config {
+	return &Config{
+		CounterServiceAddr: "localhost:9001",
+		TimeoutDuration:    5 * time.Second,
+		PoolSize:           20,
+		MaxRecvMsgSize:     1024 * 1024 * 4, // 4MB
+		MaxSendMsgSize:     1024 * 1024 * 4, // 4MB
+		KeepAliveTime:      30 * time.Second,
+		KeepAliveTimeout:   5 * time.Second,
+	}
+}
+
+// NewServiceManager 创建服务管理器 - 使用连接池
+func NewServiceManager(config *Config, logger *zap.Logger) (*ServiceManager, error) {
+	if config == nil {
+		config = DefaultConfig()
+	}
+
+	// 创建连接池配置
+	poolConfig := &client.PoolConfig{
+		Address:          config.CounterServiceAddr,
+		PoolSize:         config.PoolSize,
+		MaxRecvMsgSize:   config.MaxRecvMsgSize,
+		MaxSendMsgSize:   config.MaxSendMsgSize,
+		KeepAliveTime:    config.KeepAliveTime,
+		KeepAliveTimeout: config.KeepAliveTimeout,
+		KeepAlivePermit:  true,
+	}
+
+	// 创建Counter服务连接池
+	counterClientPool, err := client.NewCounterClientPool(poolConfig, logger)
 	if err != nil {
-		return nil, fmt.Errorf("failed to create counter client: %w", err)
+		return nil, fmt.Errorf("failed to create counter client pool: %w", err)
 	}
 
 	// 验证连接
@@ -34,39 +71,49 @@ func NewServiceManager(config *Config) (*ServiceManager, error) {
 	defer cancel()
 
 	// 执行健康检查
-	if err := validateCounterService(ctx, counterClient); err != nil {
-		counterClient.Close()
+	if err := validateCounterServicePool(ctx, counterClientPool); err != nil {
+		counterClientPool.Close()
 		return nil, fmt.Errorf("counter service health check failed: %w", err)
 	}
 
-	log.Printf("✅ Counter service connected successfully: %s", config.CounterServiceAddr)
+	log.Printf("✅ Counter service pool connected successfully: %s (pool size: %d)",
+		config.CounterServiceAddr, config.PoolSize)
 
 	return &ServiceManager{
-		counterClient: counterClient,
-		config:        config,
+		counterClientPool: counterClientPool,
+		config:            config,
+		logger:            logger,
 	}, nil
 }
 
-// GetCounterClient 获取Counter客户端
-func (sm *ServiceManager) GetCounterClient() *client.CounterClient {
-	return sm.counterClient
+// GetCounterClient 获取Counter客户端连接池
+func (sm *ServiceManager) GetCounterClient() *client.CounterClientPool {
+	return sm.counterClientPool
+}
+
+// GetPoolStats 获取连接池统计信息
+func (sm *ServiceManager) GetPoolStats() map[string]interface{} {
+	if sm.counterClientPool == nil {
+		return map[string]interface{}{"error": "counter client pool not initialized"}
+	}
+	return sm.counterClientPool.GetPoolStats()
 }
 
 // Close 关闭所有连接
 func (sm *ServiceManager) Close() error {
-	if sm.counterClient != nil {
-		return sm.counterClient.Close()
+	if sm.counterClientPool != nil {
+		return sm.counterClientPool.Close()
 	}
 	return nil
 }
 
 // HealthCheck 检查所有服务健康状态
 func (sm *ServiceManager) HealthCheck(ctx context.Context) error {
-	return validateCounterService(ctx, sm.counterClient)
+	return validateCounterServicePool(ctx, sm.counterClientPool)
 }
 
-// validateCounterService 验证Counter服务
-func validateCounterService(ctx context.Context, client *client.CounterClient) error {
+// validateCounterServicePool 验证Counter服务连接池
+func validateCounterServicePool(ctx context.Context, pool *client.CounterClientPool) error {
 	// 这里先简单返回nil，后续会加上真正的健康检查
 	return nil
 }

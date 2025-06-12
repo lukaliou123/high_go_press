@@ -17,6 +17,9 @@ service CounterService {
   
   // 健康检查
   rpc HealthCheck(HealthCheckRequest) returns (HealthCheckResponse);
+  
+  // 新增：批量增量操作
+  rpc BatchIncrementCounters(BatchIncrementRequest) returns (BatchIncrementResponse);
 }
 
 // 增量请求
@@ -71,4 +74,18 @@ message HealthCheckResponse {
   common.Status status = 1;
   string service = 2;
   map<string, string> details = 3;
+}
+
+// 新增：批量增量请求
+message BatchIncrementRequest {
+  repeated IncrementRequest operations = 1;
+  bool async = 2; // 是否异步处理
+}
+
+// 新增：批量增量响应
+message BatchIncrementResponse {
+  repeated IncrementResponse results = 1;
+  common.Status status = 2;
+  int32 processed_count = 3; // 处理成功的数量
+  int32 failed_count = 4;    // 处理失败的数量
 } 

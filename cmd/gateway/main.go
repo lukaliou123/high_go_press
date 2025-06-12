@@ -47,9 +47,15 @@ func main() {
 	serviceConfig := &service.Config{
 		CounterServiceAddr: "localhost:9001", // Counter微服务地址
 		TimeoutDuration:    5 * time.Second,
+		// 连接池优化配置
+		PoolSize:         20,               // 20个连接支持高并发
+		MaxRecvMsgSize:   1024 * 1024 * 4,  // 4MB
+		MaxSendMsgSize:   1024 * 1024 * 4,  // 4MB
+		KeepAliveTime:    30 * time.Second, // 30秒keep-alive
+		KeepAliveTimeout: 5 * time.Second,  // 5秒超时
 	}
 
-	serviceManager, err := service.NewServiceManager(serviceConfig)
+	serviceManager, err := service.NewServiceManager(serviceConfig, log)
 	if err != nil {
 		log.Fatal("Failed to initialize service manager", zap.Error(err))
 	}
@@ -99,6 +105,15 @@ func main() {
 				c.JSON(http.StatusOK, gin.H{
 					"status": "success",
 					"data":   stats,
+				})
+			})
+
+			// 连接池统计 - 新增
+			systemGroup.GET("/grpc-pools", func(c *gin.Context) {
+				poolStats := serviceManager.GetPoolStats()
+				c.JSON(http.StatusOK, gin.H{
+					"status": "success",
+					"data":   poolStats,
 				})
 			})
 

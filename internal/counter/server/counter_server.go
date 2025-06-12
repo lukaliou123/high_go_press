@@ -277,3 +277,205 @@ func (s *CounterServer) HealthCheck(ctx context.Context, req *counter.HealthChec
 		},
 	}, nil
 }
+
+// BatchIncrementCounters 批量增量计数器 - 性能优化核心功能
+func (s *CounterServer) BatchIncrementCounters(ctx context.Context, req *counter.BatchIncrementRequest) (*counter.BatchIncrementResponse, error) {
+	if len(req.Operations) == 0 {
+		return &counter.BatchIncrementResponse{
+			Status: &common.Status{
+				Success: false,
+				Message: "No operations provided",
+				Code:    int32(codes.InvalidArgument),
+			},
+		}, nil
+	}
+
+	// 限制批量大小，防止内存溢出
+	const maxBatchSize = 1000
+	if len(req.Operations) > maxBatchSize {
+		return &counter.BatchIncrementResponse{
+			Status: &common.Status{
+				Success: false,
+				Message: fmt.Sprintf("Batch size too large. Maximum allowed: %d", maxBatchSize),
+				Code:    int32(codes.InvalidArgument),
+			},
+		}, nil
+	}
+
+	s.logger.Info("Processing batch increment request",
+		zap.Int("batch_size", len(req.Operations)),
+		zap.Bool("async", req.Async))
+
+	if req.Async {
+		// 异步处理：立即返回响应，后台处理
+		go s.processBatchIncrementAsync(req.Operations)
+
+		return &counter.BatchIncrementResponse{
+			Status: &common.Status{
+				Success: true,
+				Message: "Batch operations accepted for async processing",
+				Code:    int32(codes.OK),
+			},
+			ProcessedCount: 0, // 异步模式下不等待处理完成
+			FailedCount:    0,
+		}, nil
+	}
+
+	// 同步批量处理
+	return s.processBatchIncrementSync(ctx, req.Operations)
+}
+
+// processBatchIncrementSync 同步批量处理
+func (s *CounterServer) processBatchIncrementSync(ctx context.Context, operations []*counter.IncrementRequest) (*counter.BatchIncrementResponse, error) {
+	results := make([]*counter.IncrementResponse, len(operations))
+	var processedCount, failedCount int32
+
+	// 使用Worker Pool进行并行处理
+	type operationResult struct {
+		index  int
+		result *counter.IncrementResponse
+		err    error
+	}
+
+	resultChan := make(chan operationResult, len(operations))
+	maxWorkers := 10 // 控制并发数，替代s.config.WorkerPoolSize
+	semaphore := make(chan struct{}, maxWorkers)
+
+	// 启动worker处理每个操作
+	for i, op := range operations {
+		go func(index int, operation *counter.IncrementRequest) {
+			semaphore <- struct{}{}        // 获取信号量
+			defer func() { <-semaphore }() // 释放信号量
+
+			// 处理单个增量操作
+			result, err := s.processIncrementOperation(ctx, operation)
+			resultChan <- operationResult{
+				index:  index,
+				result: result,
+				err:    err,
+			}
+		}(i, op)
+	}
+
+	// 收集结果
+	for i := 0; i < len(operations); i++ {
+		select {
+		case result := <-resultChan:
+			if result.err != nil {
+				failedCount++
+				results[result.index] = &counter.IncrementResponse{
+					Status: &common.Status{
+						Success: false,
+						Message: result.err.Error(),
+					},
+				}
+				s.logger.Error("Batch operation failed",
+					zap.Int("index", result.index),
+					zap.Error(result.err))
+			} else {
+				processedCount++
+				results[result.index] = result.result
+			}
+		case <-ctx.Done():
+			return &counter.BatchIncrementResponse{
+				Status: &common.Status{
+					Success: false,
+					Message: "Context cancelled",
+				},
+			}, ctx.Err()
+		}
+	}
+
+	s.logger.Info("Batch increment completed",
+		zap.Int32("processed", processedCount),
+		zap.Int32("failed", failedCount))
+
+	return &counter.BatchIncrementResponse{
+		Results:        results,
+		ProcessedCount: processedCount,
+		FailedCount:    failedCount,
+		Status: &common.Status{
+			Success: failedCount == 0,
+			Message: fmt.Sprintf("Processed %d operations, %d failed", processedCount, failedCount),
+		},
+	}, nil
+}
+
+// processBatchIncrementAsync 异步批量处理
+func (s *CounterServer) processBatchIncrementAsync(operations []*counter.IncrementRequest) {
+	ctx := context.Background()
+	s.logger.Info("Starting async batch processing", zap.Int("operations", len(operations)))
+
+	// 分批处理，避免一次性处理太多数据
+	const asyncBatchSize = 100
+	for i := 0; i < len(operations); i += asyncBatchSize {
+		end := i + asyncBatchSize
+		if end > len(operations) {
+			end = len(operations)
+		}
+
+		batch := operations[i:end]
+		s.processAsyncBatch(ctx, batch, i/asyncBatchSize+1)
+
+		// 批次间短暂休息，避免Redis过载
+		time.Sleep(10 * time.Millisecond)
+	}
+
+	s.logger.Info("Async batch processing completed", zap.Int("total_operations", len(operations)))
+}
+
+// processAsyncBatch 处理异步批次
+func (s *CounterServer) processAsyncBatch(ctx context.Context, batch []*counter.IncrementRequest, batchNum int) {
+	var successCount, errorCount int
+
+	for _, op := range batch {
+		_, err := s.processIncrementOperation(ctx, op)
+		if err != nil {
+			errorCount++
+			s.logger.Error("Async operation failed",
+				zap.Int("batch", batchNum),
+				zap.String("resource_id", op.ResourceId),
+				zap.Error(err))
+		} else {
+			successCount++
+		}
+	}
+
+	s.logger.Debug("Async batch completed",
+		zap.Int("batch", batchNum),
+		zap.Int("success", successCount),
+		zap.Int("errors", errorCount))
+}
+
+// processIncrementOperation 处理单个增量操作 - 提取公共逻辑
+func (s *CounterServer) processIncrementOperation(ctx context.Context, req *counter.IncrementRequest) (*counter.IncrementResponse, error) {
+	// 参数验证
+	if req.ResourceId == "" || req.CounterType == "" {
+		return nil, fmt.Errorf("resource_id and counter_type are required")
+	}
+
+	// 直接处理增量操作
+	delta := req.Delta
+	if delta == 0 {
+		delta = 1
+	}
+
+	key := fmt.Sprintf("counter:%s:%s", req.ResourceId, req.CounterType)
+
+	// 使用Redis DAO进行增量操作
+	newValue, err := s.dao.IncrementCounter(ctx, key, delta)
+	if err != nil {
+		return nil, fmt.Errorf("failed to increment counter: %w", err)
+	}
+
+	return &counter.IncrementResponse{
+		CurrentValue: newValue,
+		ResourceId:   req.ResourceId,
+		CounterType:  req.CounterType,
+		Status: &common.Status{
+			Success: true,
+			Message: "Counter incremented successfully",
+			Code:    int32(codes.OK),
+		},
+	}, nil
+}

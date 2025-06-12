@@ -19,10 +19,11 @@ import (
 const _ = grpc.SupportPackageIsVersion9
 
 const (
-	CounterService_IncrementCounter_FullMethodName = "/counter.CounterService/IncrementCounter"
-	CounterService_GetCounter_FullMethodName       = "/counter.CounterService/GetCounter"
-	CounterService_BatchGetCounters_FullMethodName = "/counter.CounterService/BatchGetCounters"
-	CounterService_HealthCheck_FullMethodName      = "/counter.CounterService/HealthCheck"
+	CounterService_IncrementCounter_FullMethodName       = "/counter.CounterService/IncrementCounter"
+	CounterService_GetCounter_FullMethodName             = "/counter.CounterService/GetCounter"
+	CounterService_BatchGetCounters_FullMethodName       = "/counter.CounterService/BatchGetCounters"
+	CounterService_HealthCheck_FullMethodName            = "/counter.CounterService/HealthCheck"
+	CounterService_BatchIncrementCounters_FullMethodName = "/counter.CounterService/BatchIncrementCounters"
 )
 
 // CounterServiceClient is the client API for CounterService service.
@@ -39,6 +40,8 @@ type CounterServiceClient interface {
 	BatchGetCounters(ctx context.Context, in *BatchGetRequest, opts ...grpc.CallOption) (*BatchGetResponse, error)
 	// 健康检查
 	HealthCheck(ctx context.Context, in *HealthCheckRequest, opts ...grpc.CallOption) (*HealthCheckResponse, error)
+	// 新增：批量增量操作
+	BatchIncrementCounters(ctx context.Context, in *BatchIncrementRequest, opts ...grpc.CallOption) (*BatchIncrementResponse, error)
 }
 
 type counterServiceClient struct {
@@ -89,6 +92,16 @@ func (c *counterServiceClient) HealthCheck(ctx context.Context, in *HealthCheckR
 	return out, nil
 }
 
+func (c *counterServiceClient) BatchIncrementCounters(ctx context.Context, in *BatchIncrementRequest, opts ...grpc.CallOption) (*BatchIncrementResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(BatchIncrementResponse)
+	err := c.cc.Invoke(ctx, CounterService_BatchIncrementCounters_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // CounterServiceServer is the server API for CounterService service.
 // All implementations must embed UnimplementedCounterServiceServer
 // for forward compatibility.
@@ -103,6 +116,8 @@ type CounterServiceServer interface {
 	BatchGetCounters(context.Context, *BatchGetRequest) (*BatchGetResponse, error)
 	// 健康检查
 	HealthCheck(context.Context, *HealthCheckRequest) (*HealthCheckResponse, error)
+	// 新增：批量增量操作
+	BatchIncrementCounters(context.Context, *BatchIncrementRequest) (*BatchIncrementResponse, error)
 	mustEmbedUnimplementedCounterServiceServer()
 }
 
@@ -124,6 +139,9 @@ func (UnimplementedCounterServiceServer) BatchGetCounters(context.Context, *Batc
 }
 func (UnimplementedCounterServiceServer) HealthCheck(context.Context, *HealthCheckRequest) (*HealthCheckResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method HealthCheck not implemented")
+}
+func (UnimplementedCounterServiceServer) BatchIncrementCounters(context.Context, *BatchIncrementRequest) (*BatchIncrementResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method BatchIncrementCounters not implemented")
 }
 func (UnimplementedCounterServiceServer) mustEmbedUnimplementedCounterServiceServer() {}
 func (UnimplementedCounterServiceServer) testEmbeddedByValue()                        {}
@@ -218,6 +236,24 @@ func _CounterService_HealthCheck_Handler(srv interface{}, ctx context.Context, d
 	return interceptor(ctx, in, info, handler)
 }
 
+func _CounterService_BatchIncrementCounters_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(BatchIncrementRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(CounterServiceServer).BatchIncrementCounters(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: CounterService_BatchIncrementCounters_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(CounterServiceServer).BatchIncrementCounters(ctx, req.(*BatchIncrementRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // CounterService_ServiceDesc is the grpc.ServiceDesc for CounterService service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -240,6 +276,10 @@ var CounterService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "HealthCheck",
 			Handler:    _CounterService_HealthCheck_Handler,
+		},
+		{
+			MethodName: "BatchIncrementCounters",
+			Handler:    _CounterService_BatchIncrementCounters_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},

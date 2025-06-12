@@ -494,6 +494,128 @@ func (x *HealthCheckResponse) GetDetails() map[string]string {
 	return nil
 }
 
+// 新增：批量增量请求
+type BatchIncrementRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Operations    []*IncrementRequest    `protobuf:"bytes,1,rep,name=operations,proto3" json:"operations,omitempty"`
+	Async         bool                   `protobuf:"varint,2,opt,name=async,proto3" json:"async,omitempty"` // 是否异步处理
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *BatchIncrementRequest) Reset() {
+	*x = BatchIncrementRequest{}
+	mi := &file_api_proto_counter_counter_proto_msgTypes[8]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *BatchIncrementRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*BatchIncrementRequest) ProtoMessage() {}
+
+func (x *BatchIncrementRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_api_proto_counter_counter_proto_msgTypes[8]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use BatchIncrementRequest.ProtoReflect.Descriptor instead.
+func (*BatchIncrementRequest) Descriptor() ([]byte, []int) {
+	return file_api_proto_counter_counter_proto_rawDescGZIP(), []int{8}
+}
+
+func (x *BatchIncrementRequest) GetOperations() []*IncrementRequest {
+	if x != nil {
+		return x.Operations
+	}
+	return nil
+}
+
+func (x *BatchIncrementRequest) GetAsync() bool {
+	if x != nil {
+		return x.Async
+	}
+	return false
+}
+
+// 新增：批量增量响应
+type BatchIncrementResponse struct {
+	state          protoimpl.MessageState `protogen:"open.v1"`
+	Results        []*IncrementResponse   `protobuf:"bytes,1,rep,name=results,proto3" json:"results,omitempty"`
+	Status         *common.Status         `protobuf:"bytes,2,opt,name=status,proto3" json:"status,omitempty"`
+	ProcessedCount int32                  `protobuf:"varint,3,opt,name=processed_count,json=processedCount,proto3" json:"processed_count,omitempty"` // 处理成功的数量
+	FailedCount    int32                  `protobuf:"varint,4,opt,name=failed_count,json=failedCount,proto3" json:"failed_count,omitempty"`          // 处理失败的数量
+	unknownFields  protoimpl.UnknownFields
+	sizeCache      protoimpl.SizeCache
+}
+
+func (x *BatchIncrementResponse) Reset() {
+	*x = BatchIncrementResponse{}
+	mi := &file_api_proto_counter_counter_proto_msgTypes[9]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *BatchIncrementResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*BatchIncrementResponse) ProtoMessage() {}
+
+func (x *BatchIncrementResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_api_proto_counter_counter_proto_msgTypes[9]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use BatchIncrementResponse.ProtoReflect.Descriptor instead.
+func (*BatchIncrementResponse) Descriptor() ([]byte, []int) {
+	return file_api_proto_counter_counter_proto_rawDescGZIP(), []int{9}
+}
+
+func (x *BatchIncrementResponse) GetResults() []*IncrementResponse {
+	if x != nil {
+		return x.Results
+	}
+	return nil
+}
+
+func (x *BatchIncrementResponse) GetStatus() *common.Status {
+	if x != nil {
+		return x.Status
+	}
+	return nil
+}
+
+func (x *BatchIncrementResponse) GetProcessedCount() int32 {
+	if x != nil {
+		return x.ProcessedCount
+	}
+	return 0
+}
+
+func (x *BatchIncrementResponse) GetFailedCount() int32 {
+	if x != nil {
+		return x.FailedCount
+	}
+	return 0
+}
+
 var File_api_proto_counter_counter_proto protoreflect.FileDescriptor
 
 const file_api_proto_counter_counter_proto_rawDesc = "" +
@@ -538,13 +660,24 @@ const file_api_proto_counter_counter_proto_rawDesc = "" +
 	"\adetails\x18\x03 \x03(\v2).counter.HealthCheckResponse.DetailsEntryR\adetails\x1a:\n" +
 	"\fDetailsEntry\x12\x10\n" +
 	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
-	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x012\xb5\x02\n" +
+	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01\"h\n" +
+	"\x15BatchIncrementRequest\x129\n" +
+	"\n" +
+	"operations\x18\x01 \x03(\v2\x19.counter.IncrementRequestR\n" +
+	"operations\x12\x14\n" +
+	"\x05async\x18\x02 \x01(\bR\x05async\"\xc2\x01\n" +
+	"\x16BatchIncrementResponse\x124\n" +
+	"\aresults\x18\x01 \x03(\v2\x1a.counter.IncrementResponseR\aresults\x12&\n" +
+	"\x06status\x18\x02 \x01(\v2\x0e.common.StatusR\x06status\x12'\n" +
+	"\x0fprocessed_count\x18\x03 \x01(\x05R\x0eprocessedCount\x12!\n" +
+	"\ffailed_count\x18\x04 \x01(\x05R\vfailedCount2\x90\x03\n" +
 	"\x0eCounterService\x12I\n" +
 	"\x10IncrementCounter\x12\x19.counter.IncrementRequest\x1a\x1a.counter.IncrementResponse\x12E\n" +
 	"\n" +
 	"GetCounter\x12\x1a.counter.GetCounterRequest\x1a\x1b.counter.GetCounterResponse\x12G\n" +
 	"\x10BatchGetCounters\x12\x18.counter.BatchGetRequest\x1a\x19.counter.BatchGetResponse\x12H\n" +
-	"\vHealthCheck\x12\x1b.counter.HealthCheckRequest\x1a\x1c.counter.HealthCheckResponseB!Z\x1fhigh-go-press/api/proto/counterb\x06proto3"
+	"\vHealthCheck\x12\x1b.counter.HealthCheckRequest\x1a\x1c.counter.HealthCheckResponse\x12Y\n" +
+	"\x16BatchIncrementCounters\x12\x1e.counter.BatchIncrementRequest\x1a\x1f.counter.BatchIncrementResponseB!Z\x1fhigh-go-press/api/proto/counterb\x06proto3"
 
 var (
 	file_api_proto_counter_counter_proto_rawDescOnce sync.Once
@@ -558,44 +691,51 @@ func file_api_proto_counter_counter_proto_rawDescGZIP() []byte {
 	return file_api_proto_counter_counter_proto_rawDescData
 }
 
-var file_api_proto_counter_counter_proto_msgTypes = make([]protoimpl.MessageInfo, 10)
+var file_api_proto_counter_counter_proto_msgTypes = make([]protoimpl.MessageInfo, 12)
 var file_api_proto_counter_counter_proto_goTypes = []any{
-	(*IncrementRequest)(nil),    // 0: counter.IncrementRequest
-	(*IncrementResponse)(nil),   // 1: counter.IncrementResponse
-	(*GetCounterRequest)(nil),   // 2: counter.GetCounterRequest
-	(*GetCounterResponse)(nil),  // 3: counter.GetCounterResponse
-	(*BatchGetRequest)(nil),     // 4: counter.BatchGetRequest
-	(*BatchGetResponse)(nil),    // 5: counter.BatchGetResponse
-	(*HealthCheckRequest)(nil),  // 6: counter.HealthCheckRequest
-	(*HealthCheckResponse)(nil), // 7: counter.HealthCheckResponse
-	nil,                         // 8: counter.IncrementRequest.MetadataEntry
-	nil,                         // 9: counter.HealthCheckResponse.DetailsEntry
-	(*common.Status)(nil),       // 10: common.Status
-	(*common.Timestamp)(nil),    // 11: common.Timestamp
+	(*IncrementRequest)(nil),       // 0: counter.IncrementRequest
+	(*IncrementResponse)(nil),      // 1: counter.IncrementResponse
+	(*GetCounterRequest)(nil),      // 2: counter.GetCounterRequest
+	(*GetCounterResponse)(nil),     // 3: counter.GetCounterResponse
+	(*BatchGetRequest)(nil),        // 4: counter.BatchGetRequest
+	(*BatchGetResponse)(nil),       // 5: counter.BatchGetResponse
+	(*HealthCheckRequest)(nil),     // 6: counter.HealthCheckRequest
+	(*HealthCheckResponse)(nil),    // 7: counter.HealthCheckResponse
+	(*BatchIncrementRequest)(nil),  // 8: counter.BatchIncrementRequest
+	(*BatchIncrementResponse)(nil), // 9: counter.BatchIncrementResponse
+	nil,                            // 10: counter.IncrementRequest.MetadataEntry
+	nil,                            // 11: counter.HealthCheckResponse.DetailsEntry
+	(*common.Status)(nil),          // 12: common.Status
+	(*common.Timestamp)(nil),       // 13: common.Timestamp
 }
 var file_api_proto_counter_counter_proto_depIdxs = []int32{
-	8,  // 0: counter.IncrementRequest.metadata:type_name -> counter.IncrementRequest.MetadataEntry
-	10, // 1: counter.IncrementResponse.status:type_name -> common.Status
-	10, // 2: counter.GetCounterResponse.status:type_name -> common.Status
-	11, // 3: counter.GetCounterResponse.last_updated:type_name -> common.Timestamp
+	10, // 0: counter.IncrementRequest.metadata:type_name -> counter.IncrementRequest.MetadataEntry
+	12, // 1: counter.IncrementResponse.status:type_name -> common.Status
+	12, // 2: counter.GetCounterResponse.status:type_name -> common.Status
+	13, // 3: counter.GetCounterResponse.last_updated:type_name -> common.Timestamp
 	2,  // 4: counter.BatchGetRequest.requests:type_name -> counter.GetCounterRequest
-	10, // 5: counter.BatchGetResponse.status:type_name -> common.Status
+	12, // 5: counter.BatchGetResponse.status:type_name -> common.Status
 	3,  // 6: counter.BatchGetResponse.counters:type_name -> counter.GetCounterResponse
-	10, // 7: counter.HealthCheckResponse.status:type_name -> common.Status
-	9,  // 8: counter.HealthCheckResponse.details:type_name -> counter.HealthCheckResponse.DetailsEntry
-	0,  // 9: counter.CounterService.IncrementCounter:input_type -> counter.IncrementRequest
-	2,  // 10: counter.CounterService.GetCounter:input_type -> counter.GetCounterRequest
-	4,  // 11: counter.CounterService.BatchGetCounters:input_type -> counter.BatchGetRequest
-	6,  // 12: counter.CounterService.HealthCheck:input_type -> counter.HealthCheckRequest
-	1,  // 13: counter.CounterService.IncrementCounter:output_type -> counter.IncrementResponse
-	3,  // 14: counter.CounterService.GetCounter:output_type -> counter.GetCounterResponse
-	5,  // 15: counter.CounterService.BatchGetCounters:output_type -> counter.BatchGetResponse
-	7,  // 16: counter.CounterService.HealthCheck:output_type -> counter.HealthCheckResponse
-	13, // [13:17] is the sub-list for method output_type
-	9,  // [9:13] is the sub-list for method input_type
-	9,  // [9:9] is the sub-list for extension type_name
-	9,  // [9:9] is the sub-list for extension extendee
-	0,  // [0:9] is the sub-list for field type_name
+	12, // 7: counter.HealthCheckResponse.status:type_name -> common.Status
+	11, // 8: counter.HealthCheckResponse.details:type_name -> counter.HealthCheckResponse.DetailsEntry
+	0,  // 9: counter.BatchIncrementRequest.operations:type_name -> counter.IncrementRequest
+	1,  // 10: counter.BatchIncrementResponse.results:type_name -> counter.IncrementResponse
+	12, // 11: counter.BatchIncrementResponse.status:type_name -> common.Status
+	0,  // 12: counter.CounterService.IncrementCounter:input_type -> counter.IncrementRequest
+	2,  // 13: counter.CounterService.GetCounter:input_type -> counter.GetCounterRequest
+	4,  // 14: counter.CounterService.BatchGetCounters:input_type -> counter.BatchGetRequest
+	6,  // 15: counter.CounterService.HealthCheck:input_type -> counter.HealthCheckRequest
+	8,  // 16: counter.CounterService.BatchIncrementCounters:input_type -> counter.BatchIncrementRequest
+	1,  // 17: counter.CounterService.IncrementCounter:output_type -> counter.IncrementResponse
+	3,  // 18: counter.CounterService.GetCounter:output_type -> counter.GetCounterResponse
+	5,  // 19: counter.CounterService.BatchGetCounters:output_type -> counter.BatchGetResponse
+	7,  // 20: counter.CounterService.HealthCheck:output_type -> counter.HealthCheckResponse
+	9,  // 21: counter.CounterService.BatchIncrementCounters:output_type -> counter.BatchIncrementResponse
+	17, // [17:22] is the sub-list for method output_type
+	12, // [12:17] is the sub-list for method input_type
+	12, // [12:12] is the sub-list for extension type_name
+	12, // [12:12] is the sub-list for extension extendee
+	0,  // [0:12] is the sub-list for field type_name
 }
 
 func init() { file_api_proto_counter_counter_proto_init() }
@@ -609,7 +749,7 @@ func file_api_proto_counter_counter_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_api_proto_counter_counter_proto_rawDesc), len(file_api_proto_counter_counter_proto_rawDesc)),
 			NumEnums:      0,
-			NumMessages:   10,
+			NumMessages:   12,
 			NumExtensions: 0,
 			NumServices:   1,
 		},
