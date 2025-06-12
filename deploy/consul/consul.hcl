@@ -54,8 +54,8 @@ services {
   tags = ["counter", "grpc", "microservice"]
   
   check {
-    name = "Counter gRPC Health Check"
-    grpc = "localhost:9001"
+    name = "Counter TCP Health Check"
+    tcp = "localhost:9001"
     interval = "10s"
     timeout = "3s"
   }
@@ -68,8 +68,8 @@ services {
   tags = ["analytics", "grpc", "microservice"]
   
   check {
-    name = "Analytics gRPC Health Check"
-    grpc = "localhost:9002"
+    name = "Analytics TCP Health Check"
+    tcp = "localhost:9002"
     interval = "10s"
     timeout = "3s"
   }
