@@ -1,39 +1,121 @@
 # HighGoPress 开发环境配置
-# Phase 2 Day 1
+# Environment: Development
+environment: dev
 
-# 继承基础配置，覆盖开发环境特定设置
-
-# Gateway 开发配置
+# Gateway 网关配置 (开发环境)
 gateway:
   server:
+    host: "0.0.0.0"
+    port: 8080
     mode: "debug"
+  timeout:
+    read: "30s"
+    write: "30s"
+    idle: "120s"
+    grpc: "5s"
+  security:
+    rate_limit:
+      enabled: false  # 开发环境禁用限流
+      rps: 1000
+      burst: 1500
   cors:
-    origins: ["http://localhost:3000", "http://localhost:8080"]
+      enabled: true
+      origins: ["*"]  # 开发环境允许所有源
 
-# 日志开发配置
-logging:
-  level: "debug"
-  format: "console"
-  output: "stdout"
+# Counter 计数服务配置 (开发环境)
+counter:
+  server:
+    host: "0.0.0.0"
+    port: 9001
+    mode: "debug"
+  grpc:
+    max_recv_msg_size: 4194304  # 4MB
+    max_send_msg_size: 4194304  # 4MB
+    max_connections: 1000
+    keep_alive:
+      time: "60s"
+      timeout: "10s"
+    connection_pool:
+      size: 20
+      max_idle_time: "300s"
+      health_check: true
+  performance:
+    worker_pool_size: 1000
+    object_pool_enabled: true
+    batch_size: 100
 
-# 监控开发配置
-monitoring:
-  pprof:
-    enabled: true
-    port: 6060
-  prometheus:
-    enabled: false # 开发环境关闭prometheus
-  health_check:
-    port: 8090
+# Analytics 分析服务配置 (开发环境)
+analytics:
+  server:
+    host: "0.0.0.0"
+    port: 9002
+    mode: "debug"
+  grpc:
+    max_recv_msg_size: 4194304  # 4MB
+    max_send_msg_size: 4194304  # 4MB
+    max_connections: 500
+    keep_alive:
+      time: "60s"
+      timeout: "10s"
+  cache:
+    ttl: "300s"
+    max_size: 10000
+    cleanup_interval: "60s"
 
-# Redis 开发配置
-redis:
-  address: "localhost:6379"
-  password: ""
-  db: 1 # 使用不同的数据库避免与生产冲突
-
-# 服务发现开发配置
+# 服务发现配置 (开发环境)
 discovery:
   type: "consul"
   consul:
-    address: "localhost:8500" 
+    address: "localhost:8500"
+    scheme: "http"
+    timeout: "10s"
+    token: ""
+
+# Redis 配置 (开发环境)
+redis:
+  address: "localhost:6379"
+  password: ""
+  db: 0
+  pool_size: 20
+  min_idle_conns: 5
+  max_retries: 3
+  dial_timeout: "5s"
+  read_timeout: "3s"
+  write_timeout: "3s"
+
+# Kafka 配置 (开发环境)
+kafka:
+  mode: "real"  # 开发环境使用真实Kafka
+  brokers: ["localhost:9092"]
+  topic: "counter-events"
+  producer:
+    batch_size: 16384
+    linger_ms: 10
+    buffer_memory: 33554432
+  consumer:
+    group_id: "high_go_press_analytics_dev"
+    auto_offset_reset: "earliest"
+
+# 日志配置 (开发环境)
+log:
+  level: "debug"  # 开发环境使用debug级别
+  format: "console"  # 控制台格式，便于开发调试
+  output: "stdout"
+  file:
+    path: "./logs"
+    max_size: 100
+    max_age: 7
+    max_backups: 3
+
+# 监控配置 (开发环境)
+monitoring:
+  pprof:
+    enabled: true  # 开发环境启用pprof
+    port: 6060
+  prometheus:
+    enabled: false  # 开发环境暂时禁用prometheus
+    port: 2112
+    path: "/metrics"
+  health_check:
+    port: 8090
+    path: "/health" 

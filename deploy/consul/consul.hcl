@@ -1,5 +1,5 @@
 # Consul 配置文件
-# HighGoPress Phase 2 服务发现
+# HighGoPress Phase 2 服务发现 + Kafka集成
 
 datacenter = "dc1"
 data_dir = "/tmp/consul"
@@ -32,12 +32,12 @@ acl = {
   default_policy = "allow"
 }
 
-# 服务注册配置
+# 🌐 微服务注册配置
 services {
   name = "high-go-press-gateway"
   id = "gateway-1"
   port = 8080
-  tags = ["gateway", "http", "api"]
+  tags = ["gateway", "http", "api", "v2.0"]
   
   check {
     name = "Gateway Health Check"
@@ -51,7 +51,7 @@ services {
   name = "high-go-press-counter"
   id = "counter-1"
   port = 9001
-  tags = ["counter", "grpc", "microservice"]
+  tags = ["counter", "grpc", "microservice", "v2.0"]
   
   check {
     name = "Counter TCP Health Check"
@@ -65,11 +65,55 @@ services {
   name = "high-go-press-analytics"
   id = "analytics-1" 
   port = 9002
-  tags = ["analytics", "grpc", "microservice"]
+  tags = ["analytics", "grpc", "microservice", "v2.0"]
   
   check {
     name = "Analytics TCP Health Check"
     tcp = "localhost:9002"
+    interval = "10s"
+    timeout = "3s"
+  }
+}
+
+# 🔥 Kafka服务注册 (KRaft模式，无需Zookeeper)
+services {
+  name = "high-go-press-kafka"
+  id = "kafka-1"
+  port = 9092
+  tags = ["kafka", "messaging", "kraft", "async", "v2.8"]
+  
+  meta = {
+    version = "2.13-2.8.0"
+    mode = "kraft"
+    topics = "counter-events"
+    partitions = "4"
+    compression = "snappy"
+  }
+  
+  check {
+    name = "Kafka TCP Health Check"
+    tcp = "localhost:9092"
+    interval = "15s"
+    timeout = "5s"
+  }
+}
+
+# 📊 Redis服务注册 (数据存储)
+services {
+  name = "high-go-press-redis"
+  id = "redis-1"
+  port = 6379
+  tags = ["redis", "cache", "storage", "persistence"]
+  
+  meta = {
+    version = "7.0"
+    persistence = "true"
+    max_memory = "256mb"
+  }
+  
+  check {
+    name = "Redis Health Check"
+    tcp = "localhost:6379"
     interval = "10s"
     timeout = "3s"
   }

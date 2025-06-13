@@ -11,9 +11,9 @@ discovery:
 
 # Gateway 网关配置
 gateway:
-server:
-  host: "0.0.0.0"
-  port: 8080
+  server:
+    host: "0.0.0.0"
+    port: 8080
     mode: "release" # debug, release, test
   timeout:
     read: "30s"
@@ -29,8 +29,8 @@ counter:
     host: "0.0.0.0"
     port: 9001
   grpc:
-    max_recv_msg_size: "4MB"
-    max_send_msg_size: "4MB"
+    max_recv_msg_size: 4194304
+    max_send_msg_size: 4194304
     max_connections: 1000
     keep_alive:
       time: "60s"
@@ -46,8 +46,8 @@ analytics:
     host: "0.0.0.0"
     port: 9002
   grpc:
-    max_recv_msg_size: "4MB"
-    max_send_msg_size: "4MB"
+    max_recv_msg_size: 4194304
+    max_send_msg_size: 4194304
     max_connections: 500
     keep_alive:
       time: "60s"
@@ -67,8 +67,9 @@ redis:
 
 # Kafka 配置
 kafka:
+  mode: "real"  # 使用真实Kafka进行测试
   brokers: ["localhost:9092"]
-  topic: "counter_events"
+  topic: "counter-events"
   producer:
     batch_size: 16384
     linger_ms: 10
@@ -78,7 +79,7 @@ kafka:
     auto_offset_reset: "earliest"
 
 # 日志配置
-logging:
+log:
   level: "info" # debug, info, warn, error
   format: "json" # json, console
   output: "stdout" # stdout, file
@@ -87,6 +88,12 @@ logging:
     max_size: 100 # MB
     max_age: 7 # days
     max_backups: 10
+
+# 服务器配置（用于Gateway）
+server:
+  host: "localhost"
+  port: 8080
+  mode: "debug"
 
 # 监控配置
 monitoring:

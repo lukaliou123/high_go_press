@@ -1,0 +1,121 @@
+# HighGoPress 测试环境配置
+# Environment: Test
+environment: test
+
+# Gateway 网关配置 (测试环境)
+gateway:
+  server:
+    host: "0.0.0.0"
+    port: 8080
+    mode: "test"
+  timeout:
+    read: "30s"
+    write: "30s"
+    idle: "120s"
+    grpc: "5s"
+  security:
+    rate_limit:
+      enabled: true  # 测试环境启用限流
+      rps: 500
+      burst: 750
+    cors:
+      enabled: true
+      origins: ["http://localhost:*"]  # 测试环境限制源
+
+# Counter 计数服务配置 (测试环境)
+counter:
+  server:
+    host: "0.0.0.0"
+    port: 9001
+    mode: "test"
+  grpc:
+    max_recv_msg_size: 4194304
+    max_send_msg_size: 4194304
+    max_connections: 500
+    keep_alive:
+      time: "60s"
+      timeout: "10s"
+    connection_pool:
+      size: 10  # 测试环境减少连接池大小
+      max_idle_time: "300s"
+      health_check: true
+  performance:
+    worker_pool_size: 500  # 测试环境减少worker数量
+    object_pool_enabled: true
+    batch_size: 50
+
+# Analytics 分析服务配置 (测试环境)
+analytics:
+  server:
+    host: "0.0.0.0"
+    port: 9002
+    mode: "test"
+  grpc:
+    max_recv_msg_size: 4194304
+    max_send_msg_size: 4194304
+    max_connections: 200
+    keep_alive:
+      time: "60s"
+      timeout: "10s"
+  cache:
+    ttl: "60s"  # 测试环境缩短缓存时间
+    max_size: 1000
+    cleanup_interval: "30s"
+
+# 服务发现配置 (测试环境)
+discovery:
+  type: "consul"
+  consul:
+    address: "localhost:8500"
+    scheme: "http"
+    timeout: "5s"  # 测试环境缩短超时
+    token: ""
+
+# Redis 配置 (测试环境)
+redis:
+  address: "localhost:6379"
+  password: ""
+  db: 1  # 使用不同数据库避免与开发环境冲突
+  pool_size: 10
+  min_idle_conns: 2
+  max_retries: 3
+  dial_timeout: "3s"
+  read_timeout: "2s"
+  write_timeout: "2s"
+
+# Kafka 配置 (测试环境)
+kafka:
+  mode: "mock"  # 测试环境使用mock模式
+  brokers: ["localhost:9092"]
+  topic: "counter-events-test"
+  producer:
+    batch_size: 8192
+    linger_ms: 5
+    buffer_memory: 16777216
+  consumer:
+    group_id: "high_go_press_analytics_test"
+    auto_offset_reset: "earliest"
+
+# 日志配置 (测试环境)
+log:
+  level: "info"  # 测试环境使用info级别
+  format: "json"  # JSON格式便于解析
+  output: "stdout"
+  file:
+    path: "./logs/test"
+    max_size: 50
+    max_age: 3
+    max_backups: 2
+
+# 监控配置 (测试环境)
+monitoring:
+  pprof:
+    enabled: false  # 测试环境禁用pprof
+    port: 6060
+  prometheus:
+    enabled: true  # 测试环境启用prometheus收集指标
+    port: 2112
+    path: "/metrics"
+  health_check:
+    port: 8090
+    path: "/health" 
