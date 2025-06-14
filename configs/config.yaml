@@ -106,4 +106,49 @@ monitoring:
     path: "/metrics"
   health_check:
     port: 8090
-    path: "/health" 
+    path: "/health"
+
+# 错误处理和重试配置
+resilience:
+  # 熔断器配置
+  circuit_breaker:
+    enabled: true
+    failure_threshold: 5
+    success_threshold: 3
+    timeout: "30s"
+    max_requests: 10
+    stat_window: "60s"
+  
+  # 重试配置
+  retry:
+    enabled: true
+    max_attempts: 3
+    initial_backoff: "100ms"
+    max_backoff: "30s"
+    backoff_multiplier: 2.0
+    jitter: 0.1
+    timeout: "60s"
+    retryable_codes:
+      - "UNAVAILABLE"
+      - "DEADLINE_EXCEEDED"
+      - "RESOURCE_EXHAUSTED"
+      - "ABORTED"
+      - "INTERNAL"
+  
+  # 降级配置
+  fallback:
+    enabled: true
+    strategy: "cache" # cache, default, static, alternative
+    cache_ttl: "5m"
+    timeout: "1s"
+    trigger_conditions:
+      - type: "error_rate"
+        threshold: 0.5
+        time_window: "1m"
+  
+  # 错误处理配置
+  error_handling:
+    enabled: true
+    stats_window: "5m"
+    error_rate_threshold: 0.1
+    log_level: "error" 

@@ -23,6 +23,7 @@ type Config struct {
 	Kafka       KafkaConfig      `mapstructure:"kafka"`
 	Log         LogConfig        `mapstructure:"log"`
 	Monitoring  MonitoringConfig `mapstructure:"monitoring"`
+	Resilience  ResilienceConfig `mapstructure:"resilience"`
 }
 
 // GatewayConfig Gateway服务配置
@@ -206,6 +207,60 @@ type PrometheusConfig struct {
 type HealthCheckConfig struct {
 	Port int    `mapstructure:"port"`
 	Path string `mapstructure:"path"`
+}
+
+// ResilienceConfig 弹性配置
+type ResilienceConfig struct {
+	CircuitBreaker CircuitBreakerConfig `mapstructure:"circuit_breaker"`
+	Retry          RetryConfig          `mapstructure:"retry"`
+	Fallback       FallbackConfig       `mapstructure:"fallback"`
+	ErrorHandling  ErrorHandlingConfig  `mapstructure:"error_handling"`
+}
+
+// CircuitBreakerConfig 熔断器配置
+type CircuitBreakerConfig struct {
+	Enabled          bool          `mapstructure:"enabled"`
+	FailureThreshold int           `mapstructure:"failure_threshold"`
+	SuccessThreshold int           `mapstructure:"success_threshold"`
+	Timeout          time.Duration `mapstructure:"timeout"`
+	MaxRequests      int           `mapstructure:"max_requests"`
+	StatWindow       time.Duration `mapstructure:"stat_window"`
+}
+
+// RetryConfig 重试配置
+type RetryConfig struct {
+	Enabled           bool          `mapstructure:"enabled"`
+	MaxAttempts       int           `mapstructure:"max_attempts"`
+	InitialBackoff    time.Duration `mapstructure:"initial_backoff"`
+	MaxBackoff        time.Duration `mapstructure:"max_backoff"`
+	BackoffMultiplier float64       `mapstructure:"backoff_multiplier"`
+	Jitter            float64       `mapstructure:"jitter"`
+	Timeout           time.Duration `mapstructure:"timeout"`
+	RetryableCodes    []string      `mapstructure:"retryable_codes"`
+}
+
+// FallbackConfig 降级配置
+type FallbackConfig struct {
+	Enabled           bool                    `mapstructure:"enabled"`
+	Strategy          string                  `mapstructure:"strategy"`
+	CacheTTL          time.Duration           `mapstructure:"cache_ttl"`
+	Timeout           time.Duration           `mapstructure:"timeout"`
+	TriggerConditions []FallbackConditionConf `mapstructure:"trigger_conditions"`
+}
+
+// FallbackConditionConf 降级触发条件配置
+type FallbackConditionConf struct {
+	Type       string        `mapstructure:"type"`
+	Threshold  float64       `mapstructure:"threshold"`
+	TimeWindow time.Duration `mapstructure:"time_window"`
+}
+
+// ErrorHandlingConfig 错误处理配置
+type ErrorHandlingConfig struct {
+	Enabled            bool          `mapstructure:"enabled"`
+	StatsWindow        time.Duration `mapstructure:"stats_window"`
+	ErrorRateThreshold float64       `mapstructure:"error_rate_threshold"`
+	LogLevel           string        `mapstructure:"log_level"`
 }
 
 // Manager 配置管理器
