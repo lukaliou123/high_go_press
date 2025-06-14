@@ -188,6 +188,8 @@ type MonitoringConfig struct {
 	Pprof       PprofConfig       `mapstructure:"pprof"`
 	Prometheus  PrometheusConfig  `mapstructure:"prometheus"`
 	HealthCheck HealthCheckConfig `mapstructure:"health_check"`
+	Metrics     MetricsConfig     `mapstructure:"metrics"`
+	System      SystemConfig      `mapstructure:"system"`
 }
 
 // PprofConfig Pprof配置
@@ -198,15 +200,50 @@ type PprofConfig struct {
 
 // PrometheusConfig Prometheus配置
 type PrometheusConfig struct {
-	Enabled bool   `mapstructure:"enabled"`
-	Port    int    `mapstructure:"port"`
-	Path    string `mapstructure:"path"`
+	Enabled            bool          `mapstructure:"enabled"`
+	Port               int           `mapstructure:"port"`
+	Path               string        `mapstructure:"path"`
+	Namespace          string        `mapstructure:"namespace"`
+	Subsystem          string        `mapstructure:"subsystem"`
+	EnableSystem       bool          `mapstructure:"enable_system"`
+	EnableBusiness     bool          `mapstructure:"enable_business"`
+	EnableDB           bool          `mapstructure:"enable_db"`
+	EnableCache        bool          `mapstructure:"enable_cache"`
+	CollectionInterval time.Duration `mapstructure:"collection_interval"`
 }
 
 // HealthCheckConfig 健康检查配置
 type HealthCheckConfig struct {
-	Port int    `mapstructure:"port"`
-	Path string `mapstructure:"path"`
+	Enabled  bool          `mapstructure:"enabled"`
+	Port     int           `mapstructure:"port"`
+	Path     string        `mapstructure:"path"`
+	Interval time.Duration `mapstructure:"interval"`
+	Timeout  time.Duration `mapstructure:"timeout"`
+}
+
+// MetricsConfig 指标配置
+type MetricsConfig struct {
+	HTTP     MetricTypeConfig `mapstructure:"http"`
+	GRPC     MetricTypeConfig `mapstructure:"grpc"`
+	Business MetricTypeConfig `mapstructure:"business"`
+	Database MetricTypeConfig `mapstructure:"database"`
+	Cache    MetricTypeConfig `mapstructure:"cache"`
+}
+
+// MetricTypeConfig 指标类型配置
+type MetricTypeConfig struct {
+	Enabled bool      `mapstructure:"enabled"`
+	Buckets []float64 `mapstructure:"buckets"`
+}
+
+// SystemConfig 系统指标配置
+type SystemConfig struct {
+	Enabled            bool          `mapstructure:"enabled"`
+	CollectionInterval time.Duration `mapstructure:"collection_interval"`
+	CPUEnabled         bool          `mapstructure:"cpu_enabled"`
+	MemoryEnabled      bool          `mapstructure:"memory_enabled"`
+	GoroutineEnabled   bool          `mapstructure:"goroutine_enabled"`
+	GCEnabled          bool          `mapstructure:"gc_enabled"`
 }
 
 // ResilienceConfig 弹性配置

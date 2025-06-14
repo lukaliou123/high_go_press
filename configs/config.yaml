@@ -97,16 +97,67 @@ server:
 
 # 监控配置
 monitoring:
+  # pprof 性能分析
   pprof:
     enabled: true
     port: 6060
+    
+  # Prometheus 指标收集
   prometheus:
     enabled: true
     port: 2112
     path: "/metrics"
+    namespace: "highgopress"
+    subsystem: ""
+    enable_system: true
+    enable_business: true
+    enable_db: true
+    enable_cache: true
+    collection_interval: "15s"
+    
+  # 健康检查
   health_check:
+    enabled: true
     port: 8090
     path: "/health"
+    interval: "30s"
+    timeout: "5s"
+    
+  # 指标配置
+  metrics:
+    # HTTP 指标
+    http:
+      enabled: true
+      buckets: [0.001, 0.005, 0.01, 0.025, 0.05, 0.1, 0.25, 0.5, 1, 2.5, 5, 10]
+      
+    # gRPC 指标
+    grpc:
+      enabled: true
+      buckets: [0.001, 0.005, 0.01, 0.025, 0.05, 0.1, 0.25, 0.5, 1, 2.5, 5, 10]
+      
+    # 业务指标
+    business:
+      enabled: true
+      buckets: [0.001, 0.005, 0.01, 0.025, 0.05, 0.1, 0.25, 0.5, 1, 2.5, 5, 10]
+      
+    # 数据库指标
+    database:
+      enabled: true
+      buckets: [0.001, 0.005, 0.01, 0.025, 0.05, 0.1, 0.25, 0.5, 1, 2.5, 5, 10]
+      
+    # 缓存指标
+    cache:
+      enabled: true
+      buckets: [0.0001, 0.0005, 0.001, 0.005, 0.01, 0.025, 0.05, 0.1, 0.25, 0.5]
+      
+  # 系统指标收集
+  system:
+    enabled: true
+    collection_interval: "15s"
+    cpu_enabled: true
+    memory_enabled: true
+    goroutine_enabled: true
+    gc_enabled: true
 
 # 错误处理和重试配置
 resilience:

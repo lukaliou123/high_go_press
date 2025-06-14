@@ -1,0 +1,140 @@
+# Prometheus 配置文件
+# HighGoPress 微服务监控
+
+global:
+  scrape_interval: 15s
+  evaluation_interval: 15s
+  external_labels:
+    cluster: 'highgopress'
+    environment: 'dev'
+
+# 告警规则文件
+rule_files:
+  - "alert_rules.yml"
+
+# 告警管理器配置
+alerting:
+  alertmanagers:
+    - static_configs:
+        - targets:
+          - alertmanager:9093
+
+# 抓取配置
+scrape_configs:
+  # Prometheus 自身监控
+  - job_name: 'prometheus'
+    static_configs:
+      - targets: ['localhost:9090']
+    scrape_interval: 15s
+    metrics_path: /metrics
+
+  # Gateway 服务监控
+  - job_name: 'highgopress-gateway'
+    static_configs:
+      - targets: ['localhost:2112']
+    scrape_interval: 15s
+    metrics_path: /metrics
+    scrape_timeout: 10s
+    honor_labels: true
+    params:
+      service: ['gateway']
+
+  # Counter 服务监控
+  - job_name: 'highgopress-counter'
+    static_configs:
+      - targets: ['localhost:2113']
+    scrape_interval: 15s
+    metrics_path: /metrics
+    scrape_timeout: 10s
+    honor_labels: true
+    params:
+      service: ['counter']
+
+  # Analytics 服务监控
+  - job_name: 'highgopress-analytics'
+    static_configs:
+      - targets: ['localhost:2114']
+    scrape_interval: 15s
+    metrics_path: /metrics
+    scrape_timeout: 10s
+    honor_labels: true
+    params:
+      service: ['analytics']
+
+  # Redis 监控 (使用 redis_exporter)
+  - job_name: 'redis'
+    static_configs:
+      - targets: ['localhost:9121']
+    scrape_interval: 15s
+    metrics_path: /metrics
+
+  # Kafka 监控 (使用 kafka_exporter)
+  - job_name: 'kafka'
+    static_configs:
+      - targets: ['localhost:9308']
+    scrape_interval: 30s
+    metrics_path: /metrics
+
+  # Consul 监控
+  - job_name: 'consul'
+    static_configs:
+      - targets: ['localhost:8500']
+    scrape_interval: 15s
+    metrics_path: /v1/agent/metrics
+    params:
+      format: ['prometheus']
+
+  # Node Exporter (系统指标)
+  - job_name: 'node'
+    static_configs:
+      - targets: ['localhost:9100']
+    scrape_interval: 15s
+    metrics_path: /metrics
+
+  # 服务发现配置 (Consul)
+  - job_name: 'highgopress-services'
+    consul_sd_configs:
+      - server: 'localhost:8500'
+        services: ['highgopress-gateway', 'highgopress-counter', 'highgopress-analytics']
+    relabel_configs:
+      # 保留有 metrics 标签的服务
+      - source_labels: [__meta_consul_tags]
+        regex: '.*,metrics,.*'
+        action: keep
+      
+      # 设置实例标签
+      - source_labels: [__meta_consul_service]
+        target_label: job
+      
+      # 设置服务地址
+      - source_labels: [__meta_consul_service_address, __meta_consul_service_port]
+        target_label: __address__
+        separator: ':'
+      
+      # 添加服务标签
+      - source_labels: [__meta_consul_service]
+        target_label: service
+      
+      # 添加节点标签
+      - source_labels: [__meta_consul_node]
+        target_label: node
+
+# 存储配置
+storage:
+  tsdb:
+    path: /prometheus/data
+    retention.time: 30d
+    retention.size: 10GB
+    wal-compression: true
+
+# 远程写入配置 (可选)
+# remote_write:
+#   - url: "http://remote-storage:9201/write"
+#     queue_config:
+#       max_samples_per_send: 1000
+#       max_shards: 200
+#       capacity: 2500
+
+# 远程读取配置 (可选)
+# remote_read:
+#   - url: "http://remote-storage:9201/read" 

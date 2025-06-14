@@ -10,6 +10,7 @@ require (
 	github.com/go-redis/redis/v8 v8.11.5
 	github.com/hashicorp/consul/api v1.32.1
 	github.com/panjf2000/ants/v2 v2.11.3
+	github.com/prometheus/client_golang v1.20.5
 	github.com/spf13/viper v1.20.1
 	go.uber.org/zap v1.27.0
 	google.golang.org/grpc v1.67.3
