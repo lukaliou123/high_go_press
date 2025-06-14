@@ -54,4 +54,30 @@ coverage/
 
 # Temporary files
 tmp/
-temp/ 
+temp/
+
+# Kafka related files (should not be committed)
+kafka_*
+*.tgz
+*.tar.gz
+*.zip
+
+# Build artifacts
+main
+*.exe
+
+# Consul logs
+consul.log
+
+# Performance test files
+test_grpc_performance.go
+test_simple_performance.go
+
+# Profile files
+*.prof
+cpu_profile.txt
+memory_profile.txt
+goroutine_profile.txt
+
+# Large binary files
+*.bin 
