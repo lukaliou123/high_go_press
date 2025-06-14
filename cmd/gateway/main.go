@@ -67,16 +67,23 @@ func main() {
 	objectPool := pool.NewObjectPool()
 
 	// 初始化微服务管理器
+	log.Info("🔧 Initializing ServiceManager...",
+		zap.String("consul_address", "localhost:8500"))
+
 	serviceConfig := &service.Config{
-		CounterServiceAddr: "localhost:9001", // Counter微服务地址
-		TimeoutDuration:    5 * time.Second,
-		// 连接池优化配置
-		PoolSize:         20,               // 20个连接支持高并发
-		MaxRecvMsgSize:   1024 * 1024 * 4,  // 4MB
-		MaxSendMsgSize:   1024 * 1024 * 4,  // 4MB
-		KeepAliveTime:    30 * time.Second, // 30秒keep-alive
-		KeepAliveTimeout: 5 * time.Second,  // 5秒超时
+		ConsulAddress:        "localhost:8500",
+		TimeoutDuration:      5 * time.Second,
+		MaxRecvMsgSize:       1024 * 1024 * 4,  // 4MB
+		MaxSendMsgSize:       1024 * 1024 * 4,  // 4MB
+		KeepAliveTime:        30 * time.Second, // 30秒keep-alive
+		KeepAliveTimeout:     5 * time.Second,  // 5秒超时
+		CounterServiceName:   "high-go-press-counter",
+		AnalyticsServiceName: "high-go-press-analytics",
 	}
+
+	log.Info("🔧 Creating ServiceManager with config...",
+		zap.String("counter_service", serviceConfig.CounterServiceName),
+		zap.String("analytics_service", serviceConfig.AnalyticsServiceName))
 
 	serviceManager, err := service.NewServiceManager(serviceConfig, log)
 	if err != nil {
@@ -84,11 +91,14 @@ func main() {
 	}
 	defer serviceManager.Close()
 
+	log.Info("✅ ServiceManager initialized successfully")
 	log.Info("✅ All microservices connected successfully")
 
 	// 初始化处理器 - 使用微服务客户端
 	healthHandler := handlers.NewHealthHandler()
-	counterHandler := handlers.NewCounterHandler(serviceManager.GetCounterClient(), objectPool)
+
+	// 使用ServiceManager创建Counter处理器，不再使用独立的连接池
+	counterHandler := handlers.NewCounterHandlerWithServiceManager(serviceManager, objectPool)
 
 	// 创建Gin路由器
 	if cfg.Gateway.Server.Mode == "release" {
@@ -201,7 +211,7 @@ func main() {
 
 	// 启动指标服务器（独立端口）
 	var metricsServer *http.Server
-	if metricsManager != nil && cfg.Monitoring.Prometheus.Port != cfg.Server.Port {
+	if metricsManager != nil && cfg.Monitoring.Prometheus.Port != cfg.Gateway.Server.Port {
 		metricsRouter := gin.New()
 		metricsRouter.GET(cfg.Monitoring.Prometheus.Path, gin.WrapH(metricsManager.GetHandler()))
 

@@ -3,7 +3,6 @@ package service
 import (
 	"context"
 	"fmt"
-	"log"
 	"time"
 
 	"high-go-press/pkg/consul"
@@ -80,26 +79,61 @@ func NewServiceManager(config *Config, logger *zap.Logger) (*ServiceManager, err
 		return nil, fmt.Errorf("failed to register analytics service for discovery: %w", err)
 	}
 
-	// 等待一下，让服务发现完成
-	time.Sleep(2 * time.Second)
+	logger.Info("✅ Service discovery manager initialized successfully",
+		zap.String("consul_address", config.ConsulAddress),
+		zap.String("counter_service", config.CounterServiceName),
+		zap.String("analytics_service", config.AnalyticsServiceName))
 
-	// 验证连接
-	ctx, cancel := context.WithTimeout(context.Background(), config.TimeoutDuration)
-	defer cancel()
-
-	if err := validateServices(ctx, discoveryManager); err != nil {
-		discoveryManager.Close()
-		return nil, fmt.Errorf("service validation failed: %w", err)
-	}
-
-	log.Printf("✅ Service discovery manager initialized successfully")
-
-	return &ServiceManager{
+	// 创建ServiceManager实例
+	sm := &ServiceManager{
 		discoveryManager: discoveryManager,
 		consul:           consulClient,
 		config:           config,
 		logger:           logger,
-	}, nil
+	}
+
+	// 异步初始化服务连接，不阻塞启动流程
+	go sm.asyncInitializeServices()
+
+	return sm, nil
+}
+
+// asyncInitializeServices 异步初始化服务连接
+func (sm *ServiceManager) asyncInitializeServices() {
+	sm.logger.Info("Starting async service initialization...")
+
+	// 等待服务启动
+	time.Sleep(3 * time.Second)
+
+	// 尝试初始化连接，但不阻塞
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+
+	if err := sm.validateServicesAsync(ctx); err != nil {
+		sm.logger.Warn("Initial service validation failed, will retry later",
+			zap.Error(err))
+	} else {
+		sm.logger.Info("✅ All services validated successfully")
+	}
+}
+
+// validateServicesAsync 异步验证服务连接
+func (sm *ServiceManager) validateServicesAsync(ctx context.Context) error {
+	// 检查Counter服务
+	_, err := sm.discoveryManager.GetConnection(sm.config.CounterServiceName)
+	if err != nil {
+		sm.logger.Warn("Counter service not ready yet", zap.Error(err))
+		return fmt.Errorf("counter service not available: %w", err)
+	}
+
+	// 检查Analytics服务
+	_, err = sm.discoveryManager.GetConnection(sm.config.AnalyticsServiceName)
+	if err != nil {
+		sm.logger.Warn("Analytics service not ready yet", zap.Error(err))
+		return fmt.Errorf("analytics service not available: %w", err)
+	}
+
+	return nil
 }
 
 // GetCounterClient 获取Counter客户端连接 (通过服务发现)

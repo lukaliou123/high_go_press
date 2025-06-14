@@ -3,7 +3,6 @@ package service
 import (
 	"context"
 	"fmt"
-	"math/rand"
 	"sync"
 	"time"
 
@@ -12,6 +11,7 @@ import (
 	"go.uber.org/zap"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/connectivity"
+	"google.golang.org/grpc/keepalive"
 )
 
 // DiscoveryManager 服务发现管理器
@@ -62,19 +62,23 @@ func (dm *DiscoveryManager) RegisterService(serviceName string) error {
 		LastUpdated: time.Now(),
 	}
 
-	// 立即发现一次服务
-	if err := dm.updateService(serviceName); err != nil {
-		dm.logger.Error("Failed to update service on registration",
-			zap.String("service", serviceName),
-			zap.Error(err))
-		return err
-	}
+	dm.logger.Info("Service registered for discovery",
+		zap.String("service", serviceName))
+
+	// 异步进行初始服务发现，不阻塞注册流程
+	go func() {
+		// 等待一小段时间让服务有机会启动
+		time.Sleep(1 * time.Second)
+
+		if err := dm.updateService(serviceName); err != nil {
+			dm.logger.Warn("Initial service discovery failed, will retry later",
+				zap.String("service", serviceName),
+				zap.Error(err))
+		}
+	}()
 
 	// 启动服务监听
 	go dm.watchService(serviceName)
-
-	dm.logger.Info("Service registered for discovery",
-		zap.String("service", serviceName))
 
 	return nil
 }
@@ -92,28 +96,41 @@ func (dm *DiscoveryManager) GetConnection(serviceName string) (*grpc.ClientConn,
 	service.mutex.RLock()
 	defer service.mutex.RUnlock()
 
+	// 如果没有连接，尝试更新服务
 	if len(service.Connections) == 0 {
-		return nil, fmt.Errorf("no healthy connections available for service %s", serviceName)
+		dm.logger.Info("No connections available, triggering service update",
+			zap.String("service", serviceName))
+
+		// 异步更新服务，不阻塞当前调用
+		go dm.updateService(serviceName)
+
+		return nil, fmt.Errorf("no connections available for service %s, updating in background", serviceName)
 	}
 
-	// 简单的轮询负载均衡
-	index := rand.Intn(len(service.Connections))
-	conn := service.Connections[index]
+	// 寻找健康的连接
+	var healthyConn *grpc.ClientConn
+	for _, conn := range service.Connections {
+		state := conn.GetState()
+		if state == connectivity.Ready || state == connectivity.Idle {
+			healthyConn = conn
+			break
+		}
+	}
 
-	// 检查连接状态
-	if conn.GetState() == connectivity.TransientFailure || conn.GetState() == connectivity.Shutdown {
-		dm.logger.Warn("Connection unhealthy, triggering service update",
+	// 如果没有健康连接，返回第一个连接并触发更新
+	if healthyConn == nil {
+		dm.logger.Warn("No healthy connections found, using first available",
 			zap.String("service", serviceName),
-			zap.String("state", conn.GetState().String()))
+			zap.Int("total_connections", len(service.Connections)))
 
 		// 异步更新服务
 		go dm.updateService(serviceName)
 
-		// 返回任意一个连接，让调用者处理失败
-		return conn, nil
+		// 返回第一个连接，让调用者处理可能的失败
+		return service.Connections[0], nil
 	}
 
-	return conn, nil
+	return healthyConn, nil
 }
 
 // GetServiceInstances 获取服务实例列表
@@ -215,12 +232,13 @@ func (dm *DiscoveryManager) updateService(serviceName string) error {
 
 // createConnection 创建gRPC连接
 func (dm *DiscoveryManager) createConnection(address string) (*grpc.ClientConn, error) {
-	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 
+	// 移除 grpc.WithBlock() 以避免阻塞
 	conn, err := grpc.DialContext(ctx, address,
 		grpc.WithInsecure(), // 开发环境，生产环境应使用TLS
-		grpc.WithBlock(),
+		// 移除 grpc.WithBlock() - 这是导致阻塞的根本原因
 		grpc.WithDefaultServiceConfig(`{
 			"methodConfig": [{
 				"name": [{"service": ""}],
@@ -234,11 +252,21 @@ func (dm *DiscoveryManager) createConnection(address string) (*grpc.ClientConn, 
 				"timeout": "5s"
 			}]
 		}`),
+		// 添加连接参数
+		grpc.WithKeepaliveParams(keepalive.ClientParameters{
+			Time:                10 * time.Second,
+			Timeout:             3 * time.Second,
+			PermitWithoutStream: true,
+		}),
 	)
 
 	if err != nil {
 		return nil, fmt.Errorf("failed to dial %s: %w", address, err)
 	}
+
+	dm.logger.Info("gRPC connection created",
+		zap.String("address", address),
+		zap.String("state", conn.GetState().String()))
 
 	return conn, nil
 }

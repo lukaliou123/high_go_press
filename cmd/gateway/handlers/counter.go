@@ -8,6 +8,7 @@ import (
 	pb "high-go-press/api/proto/counter"
 	"high-go-press/internal/biz"
 	"high-go-press/internal/gateway/client"
+	"high-go-press/internal/gateway/service"
 	"high-go-press/pkg/pool"
 
 	"github.com/gin-gonic/gin"
@@ -16,6 +17,7 @@ import (
 // CounterHandler 计数器处理器 - 微服务版本 (使用连接池)
 type CounterHandler struct {
 	counterClientPool *client.CounterClientPool
+	serviceManager    *service.ServiceManager
 	objPool           *pool.ObjectPool
 	timeout           time.Duration
 }
@@ -29,7 +31,16 @@ func NewCounterHandler(counterClientPool *client.CounterClientPool, objPool *poo
 	}
 }
 
-// IncrementCounter 增量计数器 - HTTP转gRPC (使用连接池)
+// NewCounterHandlerWithServiceManager 创建计数器处理器 - 使用ServiceManager
+func NewCounterHandlerWithServiceManager(serviceManager *service.ServiceManager, objPool *pool.ObjectPool) *CounterHandler {
+	return &CounterHandler{
+		serviceManager: serviceManager,
+		objPool:        objPool,
+		timeout:        5 * time.Second, // 默认5秒超时
+	}
+}
+
+// IncrementCounter 增量计数器 - HTTP转gRPC (使用连接池或ServiceManager)
 func (h *CounterHandler) IncrementCounter(c *gin.Context) {
 	req := h.objPool.GetIncrementRequest()
 	defer h.objPool.PutIncrementRequest(req)
@@ -58,8 +69,35 @@ func (h *CounterHandler) IncrementCounter(c *gin.Context) {
 		Delta:       req.Delta,
 	}
 
-	// 调用Counter gRPC服务 - 使用连接池
-	grpcResp, err := h.counterClientPool.IncrementCounter(ctx, grpcReq)
+	var grpcResp *pb.IncrementResponse
+	var err error
+
+	// 根据配置选择使用连接池还是ServiceManager
+	if h.serviceManager != nil {
+		// 使用ServiceManager
+		conn, connErr := h.serviceManager.GetCounterConnection()
+		if connErr != nil {
+			c.JSON(http.StatusServiceUnavailable, gin.H{
+				"status":  "error",
+				"error":   "Counter service unavailable",
+				"details": connErr.Error(),
+			})
+			return
+		}
+
+		client := pb.NewCounterServiceClient(conn)
+		grpcResp, err = client.IncrementCounter(ctx, grpcReq)
+	} else if h.counterClientPool != nil {
+		// 使用连接池
+		grpcResp, err = h.counterClientPool.IncrementCounter(ctx, grpcReq)
+	} else {
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"status": "error",
+			"error":  "No counter client configured",
+		})
+		return
+	}
+
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"status":  "error",
@@ -84,7 +122,7 @@ func (h *CounterHandler) IncrementCounter(c *gin.Context) {
 	})
 }
 
-// GetCounter 获取计数器 - HTTP转gRPC (使用连接池)
+// GetCounter 获取计数器 - HTTP转gRPC (使用连接池或ServiceManager)
 func (h *CounterHandler) GetCounter(c *gin.Context) {
 	resourceID := c.Param("resource_id")
 	counterType := c.Param("counter_type")
@@ -106,8 +144,35 @@ func (h *CounterHandler) GetCounter(c *gin.Context) {
 		CounterType: counterType,
 	}
 
-	// 调用Counter gRPC服务 - 使用连接池
-	grpcResp, err := h.counterClientPool.GetCounter(ctx, grpcReq)
+	var grpcResp *pb.GetCounterResponse
+	var err error
+
+	// 根据配置选择使用连接池还是ServiceManager
+	if h.serviceManager != nil {
+		// 使用ServiceManager
+		conn, connErr := h.serviceManager.GetCounterConnection()
+		if connErr != nil {
+			c.JSON(http.StatusServiceUnavailable, gin.H{
+				"status":  "error",
+				"error":   "Counter service unavailable",
+				"details": connErr.Error(),
+			})
+			return
+		}
+
+		client := pb.NewCounterServiceClient(conn)
+		grpcResp, err = client.GetCounter(ctx, grpcReq)
+	} else if h.counterClientPool != nil {
+		// 使用连接池
+		grpcResp, err = h.counterClientPool.GetCounter(ctx, grpcReq)
+	} else {
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"status": "error",
+			"error":  "No counter client configured",
+		})
+		return
+	}
+
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"status":  "error",
@@ -131,7 +196,7 @@ func (h *CounterHandler) GetCounter(c *gin.Context) {
 	})
 }
 
-// BatchGetCounters 批量获取计数器 - HTTP转gRPC (使用连接池)
+// BatchGetCounters 批量获取计数器 - HTTP转gRPC (使用连接池或ServiceManager)
 func (h *CounterHandler) BatchGetCounters(c *gin.Context) {
 	req := new(biz.BatchRequest)
 	if err := c.ShouldBindJSON(req); err != nil {
@@ -159,8 +224,35 @@ func (h *CounterHandler) BatchGetCounters(c *gin.Context) {
 		Requests: grpcRequests,
 	}
 
-	// 调用Counter gRPC服务 - 使用连接池
-	grpcResp, err := h.counterClientPool.BatchGetCounters(ctx, grpcReq)
+	var grpcResp *pb.BatchGetResponse
+	var err error
+
+	// 根据配置选择使用连接池还是ServiceManager
+	if h.serviceManager != nil {
+		// 使用ServiceManager
+		conn, connErr := h.serviceManager.GetCounterConnection()
+		if connErr != nil {
+			c.JSON(http.StatusServiceUnavailable, gin.H{
+				"status":  "error",
+				"error":   "Counter service unavailable",
+				"details": connErr.Error(),
+			})
+			return
+		}
+
+		client := pb.NewCounterServiceClient(conn)
+		grpcResp, err = client.BatchGetCounters(ctx, grpcReq)
+	} else if h.counterClientPool != nil {
+		// 使用连接池
+		grpcResp, err = h.counterClientPool.BatchGetCounters(ctx, grpcReq)
+	} else {
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"status": "error",
+			"error":  "No counter client configured",
+		})
+		return
+	}
+
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"status":  "error",

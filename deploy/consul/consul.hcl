@@ -36,6 +36,7 @@ acl = {
 services {
   name = "high-go-press-gateway"
   id = "gateway-1"
+  address = "localhost"
   port = 8080
   tags = ["gateway", "http", "api", "v2.0"]
   
@@ -50,6 +51,7 @@ services {
 services {
   name = "high-go-press-counter"
   id = "counter-1"
+  address = "localhost"
   port = 9001
   tags = ["counter", "grpc", "microservice", "v2.0"]
   
@@ -64,6 +66,7 @@ services {
 services {
   name = "high-go-press-analytics"
   id = "analytics-1" 
+  address = "localhost"
   port = 9002
   tags = ["analytics", "grpc", "microservice", "v2.0"]
   
