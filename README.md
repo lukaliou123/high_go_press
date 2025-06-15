@@ -5,8 +5,7 @@ HighGoPress 是一个后端项目，旨在完整展示一个系统从零开始�
 **最终性能指标：** 在1000并发下稳定达到 **16,878 QPS**，**P99 延迟仅为 0.14ms**。
 
 ## 🏗️ 最终架构
-
-![Architecture Diagram](https://mermaid.ink/svg/pako:eNqNVMFuwyAM_RXhPqBCo0eOnboKdaimTjttA8UEKTYkNgkk6a_XqSftJIt9sR977LEPzEwFq2Iu2I7Gq6v8hI1m433L6a7E0nC9_U7X8D6_hS0PqL0gA7-oYdAC2d3YnC_4i7c0Bq0R9p6G0ZJjW4kFzE5c3Jv8u8mY-ZgQh0-mN7i_uYQ8n6z4s7vQh8gD4lR-5Q63L78B7V0w9436LqgG5y7T75q4N12eJz8T_hGgK8p2u1i_28N2Vn31QYV6W1K3x4a24W5w7mC9Ww2_l-Xk-sHj3vH40N8hCgB8NfLw6-14G2p6C68QG3t7fUjD7R3e0fQ6jI9pDq8zWq_hO0Q9D32_H8J889V2F29eF_nL0x-4Xw7vP99-3_Y_8xUfO_Y-5V07tP3t3l3a-v234bXlP2r529w7Gj-U37XW2m4LhYyG9c_j2qG1o7mjt4O1p76hvaO9o7Ohtae9ob2jt4Oxo72juaO1p7-huaO_g6mjsa-5o7-vuae_o7mjvaO_o7Gjt6e9o7-jsYO1o7mju6e1r7ujt4Oxo7Wjuae3p72ju4O1o7mjua-3p72nu5MROd_c_k)
+![image](https://github.com/user-attachments/assets/b46af1e9-9dfa-42bc-a706-4fb16a038555)
 
 ## 📖 项目概述
 
