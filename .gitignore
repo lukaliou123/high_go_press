@@ -1,17 +1,44 @@
+# Log files
+*.log
+logs/
+log/
+
 # Binaries for programs and plugins
+bin/
 *.exe
 *.exe~
 *.dll
 *.so
 *.dylib
-bin/
-!bin/README.md
+main
+gateway_test
+simple_gateway
+cmd/gateway/gateway
+cmd/counter/counter
+cmd/analytics/analytics
 
-# Test binary, built with `go test -c`
+# Test garbage
+*.out
+
+# Go build cache
 *.test
 
-# Output of the go coverage tool, specifically when used with LiteIDE
-*.out
+# Editor folders
+.idea/
+.vscode/
+
+# Environment variables
+.env
+
+# Archive and temporary directories
+/docs/reports/
+/scripts/archived/
+/configs/archived/
+/temp_dev/
+
+# Kafka package
+kafka_*/
+*.tgz
 
 # Dependency directories (remove the comment below to include it)
 # vendor/
@@ -34,10 +61,6 @@ go.work
 ehthumbs.db
 Thumbs.db
 
-# Logs
-*.log
-logs/
-
 # Runtime data
 pids
 *.pid
@@ -48,7 +71,6 @@ pids
 coverage/
 
 # Environment variables
-.env
 .env.local
 .env.*.local
 
@@ -57,13 +79,11 @@ tmp/
 temp/
 
 # Kafka related files (should not be committed)
-kafka_*
 *.tgz
 *.tar.gz
 *.zip
 
 # Build artifacts
-main
 *.exe
 
 # Consul logs

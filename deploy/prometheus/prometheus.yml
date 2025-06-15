@@ -1,0 +1,74 @@
+# HighGoPress Prometheus 修复后配置
+global:
+  scrape_interval: 15s
+  evaluation_interval: 15s
+  external_labels:
+    cluster: 'highgopress'
+    environment: 'development'
+
+# 告警规则文件
+rule_files:
+  - "rules/basic-alerts.yml"
+
+# 告警管理器配置
+alerting:
+  alertmanagers:
+    - static_configs:
+        - targets: ['alertmanager:9093']
+
+# 数据抓取配置
+scrape_configs:
+  # Prometheus 自身监控
+  - job_name: 'prometheus'
+    static_configs:
+      - targets: ['localhost:9090']
+    scrape_interval: 15s
+
+  # HighGoPress 主服务监控
+  - job_name: 'highgopress-gateway'
+    static_configs:
+      - targets: ['192.168.218.26:2112']  # Gateway Prometheus metrics端口
+    scrape_interval: 15s
+    metrics_path: /metrics
+    scrape_timeout: 10s  # 确保小于 scrape_interval
+
+  # HighGoPress 计数服务监控
+  - job_name: 'highgopress-counter'
+    static_configs:
+      - targets: ['192.168.218.26:8081']  # Counter HTTP监控端口
+    scrape_interval: 15s
+    metrics_path: /metrics
+    scrape_timeout: 10s
+
+  # HighGoPress 分析服务监控
+  - job_name: 'highgopress-analytics'
+    static_configs:
+      - targets: ['192.168.218.26:8082']  # Analytics HTTP监控端口
+    scrape_interval: 15s
+    metrics_path: /metrics
+    scrape_timeout: 10s
+
+  # Node Exporter - 系统指标
+  - job_name: 'node-exporter'
+    static_configs:
+      - targets: ['node-exporter:9100']
+    scrape_interval: 15s
+
+  # cAdvisor - 容器指标
+  - job_name: 'cadvisor'
+    static_configs:
+      - targets: ['cadvisor:8080']
+    scrape_interval: 15s
+    metrics_path: /metrics
+
+  # Redis Exporter - Redis指标
+  - job_name: 'redis-exporter'
+    static_configs:
+      - targets: ['redis-exporter:9121']
+    scrape_interval: 15s
+
+  # AlertManager 监控
+  - job_name: 'alertmanager'
+    static_configs:
+      - targets: ['alertmanager:9093']
+    scrape_interval: 15s

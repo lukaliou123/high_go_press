@@ -1,0 +1,179 @@
+version: '3.8'
+
+services:
+  # Prometheus 指标收集服务
+  prometheus:
+    image: prom/prometheus:v2.45.0
+    container_name: highgopress-prometheus
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./prometheus/prometheus.yml:/etc/prometheus/prometheus.yml
+      - ./prometheus/rules:/etc/prometheus/rules
+      - prometheus_data:/prometheus
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.path=/prometheus'
+      - '--web.console.libraries=/etc/prometheus/console_libraries'
+      - '--web.console.templates=/etc/prometheus/consoles'
+      - '--storage.tsdb.retention.time=30d'
+      - '--web.enable-lifecycle'
+      - '--web.enable-admin-api'
+    networks:
+      - monitoring
+    restart: unless-stopped
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.prometheus.rule=Host(`prometheus.highgopress.local`)"
+
+  # Grafana 可视化服务
+  grafana:
+    image: grafana/grafana:10.1.0
+    container_name: highgopress-grafana
+    ports:
+      - "3000:3000"
+    volumes:
+      - grafana_data:/var/lib/grafana
+      - ./grafana/provisioning:/etc/grafana/provisioning
+      - ./grafana/dashboards:/var/lib/grafana/dashboards
+    environment:
+      - GF_SECURITY_ADMIN_USER=admin
+      - GF_SECURITY_ADMIN_PASSWORD=highgopress2024
+      - GF_USERS_ALLOW_SIGN_UP=false
+      - GF_FEATURE_TOGGLES_ENABLE=ngalert
+      - GF_UNIFIED_ALERTING_ENABLED=true
+      - GF_ALERTING_ENABLED=false
+      - GF_SERVER_ROOT_URL=http://grafana.highgopress.local
+      - GF_SMTP_ENABLED=true
+      - GF_SMTP_HOST=smtp.gmail.com:587
+      - GF_SMTP_USER=alerts@highgopress.com
+      - GF_SMTP_PASSWORD=your_smtp_password
+      - GF_SMTP_FROM_ADDRESS=alerts@highgopress.com
+    user: "0"
+    networks:
+      - monitoring
+    restart: unless-stopped
+    depends_on:
+      - prometheus
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.grafana.rule=Host(`grafana.highgopress.local`)"
+
+  # AlertManager 告警管理服务
+  alertmanager:
+    image: prom/alertmanager:v0.26.0
+    container_name: highgopress-alertmanager
+    ports:
+      - "9093:9093"
+    volumes:
+      - ./alertmanager/alertmanager.yml:/etc/alertmanager/alertmanager.yml
+      - ./alertmanager/templates:/etc/alertmanager/templates
+      - alertmanager_data:/alertmanager
+    command:
+      - '--config.file=/etc/alertmanager/alertmanager.yml'
+      - '--storage.path=/alertmanager'
+      - '--web.external-url=http://alertmanager.highgopress.local'
+      - '--cluster.advertise-address=0.0.0.0:9093'
+    networks:
+      - monitoring
+    restart: unless-stopped
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.alertmanager.rule=Host(`alertmanager.highgopress.local`)"
+
+  # Node Exporter 系统指标收集
+  node-exporter:
+    image: prom/node-exporter:v1.6.1
+    container_name: highgopress-node-exporter
+    ports:
+      - "9100:9100"
+    volumes:
+      - /proc:/host/proc:ro
+      - /sys:/host/sys:ro
+      - /:/rootfs:ro
+    command:
+      - '--path.procfs=/host/proc'
+      - '--path.rootfs=/rootfs'
+      - '--path.sysfs=/host/sys'
+      - '--collector.filesystem.mount-points-exclude=^/(sys|proc|dev|host|etc)($$|/)'
+    networks:
+      - monitoring
+    restart: unless-stopped
+
+  # cAdvisor 容器指标收集
+  cadvisor:
+    image: gcr.io/cadvisor/cadvisor:v0.47.0
+    container_name: highgopress-cadvisor
+    ports:
+      - "8081:8080"
+    volumes:
+      - /:/rootfs:ro
+      - /var/run:/var/run:ro
+      - /sys:/sys:ro
+      - /var/lib/docker/:/var/lib/docker:ro
+      - /dev/disk/:/dev/disk:ro
+    privileged: true
+    devices:
+      - /dev/kmsg
+    networks:
+      - monitoring
+    restart: unless-stopped
+
+  # Redis Exporter (如果使用Redis)
+  redis-exporter:
+    image: oliver006/redis_exporter:v1.53.0
+    container_name: highgopress-redis-exporter
+    ports:
+      - "9121:9121"
+    environment:
+      - REDIS_ADDR=redis://redis:6379
+      - REDIS_PASSWORD=your_redis_password
+    networks:
+      - monitoring
+    restart: unless-stopped
+    depends_on:
+      - redis
+
+  # Redis 服务 (示例)
+  redis:
+    image: redis:7.2-alpine
+    container_name: highgopress-redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    command: redis-server --requirepass your_redis_password
+    networks:
+      - monitoring
+    restart: unless-stopped
+
+  # Jaeger 链路追踪 (可选)
+  jaeger:
+    image: jaegertracing/all-in-one:1.49
+    container_name: highgopress-jaeger
+    ports:
+      - "16686:16686"
+      - "14268:14268"
+      - "14250:14250"
+    environment:
+      - COLLECTOR_OTLP_ENABLED=true
+    networks:
+      - monitoring
+    restart: unless-stopped
+
+volumes:
+  prometheus_data:
+    driver: local
+  grafana_data:
+    driver: local
+  alertmanager_data:
+    driver: local
+  redis_data:
+    driver: local
+
+networks:
+  monitoring:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 172.20.0.0/16 

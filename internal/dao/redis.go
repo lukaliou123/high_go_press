@@ -18,7 +18,7 @@ type RedisRepo struct {
 // NewRedisDAO 创建Redis DAO
 func NewRedisDAO(cfg config.RedisConfig, logger *zap.Logger) (*RedisRepo, error) {
 	rdb := redis.NewClient(&redis.Options{
-		Addr:     cfg.Addr,
+		Addr:     cfg.Address,
 		Password: cfg.Password,
 		DB:       cfg.DB,
 	})

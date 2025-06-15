@@ -55,7 +55,7 @@ analytics:
 
 # Redis 配置
 redis:
-  address: "localhost:6379"
+  address: "localhost:6380"
   password: ""
   db: 0
   pool_size: 20

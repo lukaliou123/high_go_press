@@ -1,0 +1,265 @@
+groups:
+  # HighGoPress 服务健康告警
+  - name: highgopress.service.health
+    rules:
+      # 服务宕机告警
+      - alert: ServiceDown
+        expr: up{job=~"highgopress.*"} == 0
+        for: 30s
+        labels:
+          severity: critical
+          category: infrastructure
+          service: "{{ $labels.job }}"
+        annotations:
+          summary: "HighGoPress service {{ $labels.job }} is down"
+          description: "Service {{ $labels.job }} on instance {{ $labels.instance }} has been down for more than 30 seconds."
+          current_value: "{{ $value }}"
+          threshold: "1"
+
+      # 服务响应时间过高
+      - alert: HighResponseTime
+        expr: histogram_quantile(0.95, sum(rate(highgopress_http_request_duration_seconds_bucket[5m])) by (le, service)) > 0.5
+        for: 2m
+        labels:
+          severity: warning
+          category: performance
+          service: "{{ $labels.service }}"
+        annotations:
+          summary: "High response time for {{ $labels.service }}"
+          description: "95th percentile response time for {{ $labels.service }} is {{ $value }}s, which is above the 500ms threshold."
+          current_value: "{{ $value }}s"
+          threshold: "0.5s"
+
+      # 错误率过高
+      - alert: HighErrorRate
+        expr: sum(rate(highgopress_http_requests_total{status=~"5.."}[5m])) by (service) / sum(rate(highgopress_http_requests_total[5m])) by (service) > 0.05
+        for: 1m
+        labels:
+          severity: critical
+          category: reliability
+          service: "{{ $labels.service }}"
+        annotations:
+          summary: "High error rate for {{ $labels.service }}"
+          description: "Error rate for {{ $labels.service }} is {{ $value | humanizePercentage }}, which is above the 5% threshold."
+          current_value: "{{ $value | humanizePercentage }}"
+          threshold: "5%"
+
+  # HighGoPress 性能告警
+  - name: highgopress.performance
+    rules:
+      # QPS 异常高
+      - alert: HighQPS
+        expr: sum(rate(highgopress_http_requests_total[5m])) by (service) > 1000
+        for: 5m
+        labels:
+          severity: warning
+          category: performance
+          service: "{{ $labels.service }}"
+        annotations:
+          summary: "High QPS for {{ $labels.service }}"
+          description: "QPS for {{ $labels.service }} is {{ $value }}, which is above the 1000 threshold."
+          current_value: "{{ $value }}"
+          threshold: "1000"
+
+      # QPS 异常低（可能的服务问题）
+      - alert: LowQPS
+        expr: sum(rate(highgopress_http_requests_total[5m])) by (service) < 1 and sum(rate(highgopress_http_requests_total[30m])) by (service) > 10
+        for: 10m
+        labels:
+          severity: warning
+          category: performance
+          service: "{{ $labels.service }}"
+        annotations:
+          summary: "Unusually low QPS for {{ $labels.service }}"
+          description: "QPS for {{ $labels.service }} is {{ $value }}, which is unusually low compared to historical data."
+          current_value: "{{ $value }}"
+          threshold: "1"
+
+      # 并发请求数过高
+      - alert: HighConcurrentRequests
+        expr: highgopress_http_requests_in_flight > 100
+        for: 2m
+        labels:
+          severity: warning
+          category: performance
+          service: "{{ $labels.service }}"
+        annotations:
+          summary: "High concurrent requests for {{ $labels.service }}"
+          description: "Concurrent requests for {{ $labels.service }} is {{ $value }}, which is above the 100 threshold."
+          current_value: "{{ $value }}"
+          threshold: "100"
+
+  # HighGoPress 资源告警
+  - name: highgopress.resources
+    rules:
+      # CPU 使用率过高
+      - alert: HighCPUUsage
+        expr: 100 - (avg(rate(node_cpu_seconds_total{mode="idle"}[5m])) * 100) > 80
+        for: 5m
+        labels:
+          severity: warning
+          category: infrastructure
+        annotations:
+          summary: "High CPU usage"
+          description: "CPU usage is {{ $value }}%, which is above the 80% threshold."
+          current_value: "{{ $value }}%"
+          threshold: "80%"
+
+      # 内存使用率过高
+      - alert: HighMemoryUsage
+        expr: (1 - (node_memory_MemAvailable_bytes / node_memory_MemTotal_bytes)) * 100 > 85
+        for: 5m
+        labels:
+          severity: warning
+          category: infrastructure
+        annotations:
+          summary: "High memory usage"
+          description: "Memory usage is {{ $value }}%, which is above the 85% threshold."
+          current_value: "{{ $value }}%"
+          threshold: "85%"
+
+      # Goroutine 数量过多
+      - alert: HighGoroutineCount
+        expr: highgopress_goroutines_total > 1000
+        for: 5m
+        labels:
+          severity: warning
+          category: performance
+          service: "{{ $labels.service }}"
+        annotations:
+          summary: "High goroutine count for {{ $labels.service }}"
+          description: "Goroutine count for {{ $labels.service }} is {{ $value }}, which is above the 1000 threshold."
+          current_value: "{{ $value }}"
+          threshold: "1000"
+
+      # 内存使用量过高
+      - alert: HighMemoryUsageBytes
+        expr: highgopress_memory_usage_bytes > 1073741824  # 1GB
+        for: 5m
+        labels:
+          severity: warning
+          category: performance
+          service: "{{ $labels.service }}"
+        annotations:
+          summary: "High memory usage for {{ $labels.service }}"
+          description: "Memory usage for {{ $labels.service }} is {{ $value | humanizeBytes }}, which is above the 1GB threshold."
+          current_value: "{{ $value | humanizeBytes }}"
+          threshold: "1GB"
+
+  # HighGoPress 业务告警
+  - name: highgopress.business
+    rules:
+      # 业务成功率过低
+      - alert: LowBusinessSuccessRate
+        expr: highgopress_business_current_value{operation="success_rate"} < 0.95
+        for: 2m
+        labels:
+          severity: critical
+          category: business
+        annotations:
+          summary: "Low business success rate"
+          description: "Business success rate is {{ $value | humanizePercentage }}, which is below the 95% threshold."
+          current_value: "{{ $value | humanizePercentage }}"
+          threshold: "95%"
+
+      # 活跃用户数异常低
+      - alert: LowActiveUsers
+        expr: highgopress_business_current_value{operation="active_users"} < 10 and hour() > 8 and hour() < 22
+        for: 10m
+        labels:
+          severity: warning
+          category: business
+        annotations:
+          summary: "Low active user count"
+          description: "Active user count is {{ $value }}, which is unusually low during business hours."
+          current_value: "{{ $value }}"
+          threshold: "10"
+
+      # 业务操作失败率过高
+      - alert: HighBusinessOperationFailureRate
+        expr: sum(rate(highgopress_business_operations_total{status="error"}[5m])) / sum(rate(highgopress_business_operations_total[5m])) > 0.1
+        for: 3m
+        labels:
+          severity: warning
+          category: business
+        annotations:
+          summary: "High business operation failure rate"
+          description: "Business operation failure rate is {{ $value | humanizePercentage }}, which is above the 10% threshold."
+          current_value: "{{ $value | humanizePercentage }}"
+          threshold: "10%"
+
+  # HighGoPress 数据库告警
+  - name: highgopress.database
+    rules:
+      # 数据库连接池耗尽
+      - alert: DatabaseConnectionPoolExhausted
+        expr: highgopress_database_connections_active / (highgopress_database_connections_active + highgopress_database_connections_idle) > 0.9
+        for: 2m
+        labels:
+          severity: critical
+          category: infrastructure
+        annotations:
+          summary: "Database connection pool nearly exhausted"
+          description: "Database connection pool usage is {{ $value | humanizePercentage }}, which is above the 90% threshold."
+          current_value: "{{ $value | humanizePercentage }}"
+          threshold: "90%"
+
+      # 数据库查询时间过长
+      - alert: SlowDatabaseQueries
+        expr: histogram_quantile(0.95, sum(rate(highgopress_database_query_duration_seconds_bucket[5m])) by (le)) > 1
+        for: 3m
+        labels:
+          severity: warning
+          category: performance
+        annotations:
+          summary: "Slow database queries detected"
+          description: "95th percentile database query time is {{ $value }}s, which is above the 1s threshold."
+          current_value: "{{ $value }}s"
+          threshold: "1s"
+
+  # HighGoPress 缓存告警
+  - name: highgopress.cache
+    rules:
+      # 缓存命中率过低
+      - alert: LowCacheHitRate
+        expr: sum(rate(highgopress_cache_hits_total[5m])) / (sum(rate(highgopress_cache_hits_total[5m])) + sum(rate(highgopress_cache_misses_total[5m]))) < 0.8
+        for: 5m
+        labels:
+          severity: warning
+          category: performance
+        annotations:
+          summary: "Low cache hit rate"
+          description: "Cache hit rate is {{ $value | humanizePercentage }}, which is below the 80% threshold."
+          current_value: "{{ $value | humanizePercentage }}"
+          threshold: "80%"
+
+  # HighGoPress gRPC 告警
+  - name: highgopress.grpc
+    rules:
+      # gRPC 错误率过高
+      - alert: HighGRPCErrorRate
+        expr: sum(rate(highgopress_grpc_requests_total{status!="OK"}[5m])) by (service) / sum(rate(highgopress_grpc_requests_total[5m])) by (service) > 0.05
+        for: 2m
+        labels:
+          severity: warning
+          category: reliability
+          service: "{{ $labels.service }}"
+        annotations:
+          summary: "High gRPC error rate for {{ $labels.service }}"
+          description: "gRPC error rate for {{ $labels.service }} is {{ $value | humanizePercentage }}, which is above the 5% threshold."
+          current_value: "{{ $value | humanizePercentage }}"
+          threshold: "5%"
+
+      # gRPC 响应时间过高
+      - alert: HighGRPCResponseTime
+        expr: histogram_quantile(0.95, sum(rate(highgopress_grpc_request_duration_seconds_bucket[5m])) by (le, service)) > 0.3
+        for: 3m
+        labels:
+          severity: warning
+          category: performance
+          service: "{{ $labels.service }}"
+        annotations:
+          summary: "High gRPC response time for {{ $labels.service }}"
+          description: "95th percentile gRPC response time for {{ $labels.service }} is {{ $value }}s, which is above the 300ms threshold."
+          current_value: "{{ $value }}s"
+          threshold: "0.3s" 
